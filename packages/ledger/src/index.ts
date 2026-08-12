@@ -24,10 +24,12 @@ export {
 } from "./ledger-service.ts"
 export {
   summarizeMonth,
+  summarizeTransactions,
   type MonthlySummary,
 } from "./ledger.ts"
 export {
   CategorySchema,
+  MonthSchema,
   TransactionListSchema,
   TransactionSchema,
   type Transaction,

@@ -48,6 +48,10 @@ export type LedgerReadError =
 export type LedgerMutationError = LedgerReadError | InvalidCategoryError
 
 export interface LedgerService {
+  readonly authorizeTransaction: (
+    transactionId: string,
+    operation: LedgerOperation,
+  ) => Effect.Effect<Transaction, LedgerReadError>
   readonly listTransactions: (
     month: string,
   ) => Effect.Effect<ReadonlyArray<Transaction>>
@@ -141,6 +145,9 @@ export const makeInMemoryLedgerLayer = (
         })
 
       return {
+        authorizeTransaction: Effect.fn("Ledger.authorizeTransaction")(
+          getAuthorizedTransaction,
+        ),
         listTransactions: Effect.fn("Ledger.listTransactions")(
           (month: string) =>
             Ref.get(state).pipe(
