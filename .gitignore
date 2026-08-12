@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+.dev.vars
+.idea/
+.vscode/
+.DS_Store
+*.key
+*.log
+*.p12
+*.pem
+*.pfx

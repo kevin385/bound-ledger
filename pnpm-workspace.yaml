@@ -1,0 +1,14 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+catalog:
+  "@effect/vitest": "4.0.0-beta.107"
+  "@types/node": "24.13.3"
+  effect: "4.0.0-beta.107"
+  typescript: "7.0.2"
+  vitest: "4.1.10"
+
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: false

@@ -1,0 +1,26 @@
+{
+  "name": "bound",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevin385/bound.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kevin385/bound/issues"
+  },
+  "homepage": "https://github.com/kevin385/bound#readme",
+  "type": "module",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @bound/cli dev",
+    "start": "pnpm --filter @bound/cli start",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "check": "pnpm typecheck && pnpm test"
+  }
+}
