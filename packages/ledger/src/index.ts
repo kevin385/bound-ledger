@@ -1,6 +1,14 @@
 export {
-  sampleTransactions,
+  decodeFixtureTransactions,
+  InvalidFixtureError,
+  sampleTransactionsFixture,
+} from "./fixtures.ts"
+export {
   summarizeMonth,
   type MonthlySummary,
-  type Transaction,
 } from "./ledger.ts"
+export {
+  TransactionListSchema,
+  TransactionSchema,
+  type Transaction,
+} from "./transaction.ts"

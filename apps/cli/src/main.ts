@@ -1,9 +1,16 @@
 import { Console, Effect } from "effect"
 
-import { sampleTransactions, summarizeMonth } from "@bound/ledger"
+import {
+  decodeFixtureTransactions,
+  sampleTransactionsFixture,
+  summarizeMonth,
+} from "@bound/ledger"
 
 const program = Effect.gen(function* () {
-  const summary = yield* summarizeMonth("2026-07", sampleTransactions)
+  const transactions = yield* decodeFixtureTransactions(
+    sampleTransactionsFixture,
+  )
+  const summary = yield* summarizeMonth("2026-07", transactions)
 
   yield* Console.log(JSON.stringify(summary, null, 2))
 })
