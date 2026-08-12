@@ -1,7 +1,18 @@
-# Contributing to Bound
+# Contributing to Bound Ledger
 
-Bound is currently an early research project. Small, evidence-backed changes are
-preferred over framework expansion.
+Bound Ledger is currently an early research project. Small, evidence-backed
+changes are preferred over framework expansion.
+
+## Choosing work
+
+Read [docs/INITIAL_PLAN.md](docs/INITIAL_PLAN.md) before changing code. It is the
+authoritative implementation order and identifies the current phase. Work from
+later phases should not be scaffolded early, even when it appears in the target
+architecture in [PLAN.md](PLAN.md).
+
+Use the ownership and non-goals declared by the current phase. Do not add a
+package, agent, cloud resource, database, UI, or sandbox until the corresponding
+phase gate is complete.
 
 ## Development
 
@@ -20,6 +31,16 @@ pnpm start
 
 Keep tests beside the behavior they verify and keep dependencies flowing from
 applications toward packages.
+
+Before opening a pull request:
+
+```sh
+pnpm check
+pnpm start
+```
+
+If a pull request completes a phase, update the **Current phase** marker in
+`docs/INITIAL_PLAN.md` in the same change.
 
 ## Clean-room contributions
 
