@@ -1,16 +1,16 @@
 {
-  "name": "bound",
+  "name": "bound-ledger",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kevin385/bound.git"
+    "url": "git+https://github.com/kevin385/bound-ledger.git"
   },
   "bugs": {
-    "url": "https://github.com/kevin385/bound/issues"
+    "url": "https://github.com/kevin385/bound-ledger/issues"
   },
-  "homepage": "https://github.com/kevin385/bound#readme",
+  "homepage": "https://github.com/kevin385/bound-ledger#readme",
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {

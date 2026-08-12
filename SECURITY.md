@@ -2,9 +2,9 @@
 
 ## Project status
 
-Bound is pre-alpha research software. It is not a production security boundary
-and must not be used with real financial data, production credentials, or
-untrusted generated code.
+Bound Ledger is pre-alpha research software. It is not a production security
+boundary and must not be used with real financial data, production credentials,
+or untrusted generated code.
 
 Only the current `main` branch receives security fixes.
 

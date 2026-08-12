@@ -1,14 +1,22 @@
-# Bound — Portfolio Project Plan
+# Bound Ledger — Research and Portfolio Plan
 
 ## Status
 
-This document replaces the earlier release-runtime simulator plan.
+This document is the research thesis, target architecture, and long-term
+evaluation plan. The phase order in [`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md)
+is authoritative for current implementation work.
 
-The project is named **Bound**.
+The product and repository are named **Bound Ledger**. Workspace packages keep
+the `@bound/*` namespace.
 
 > Let agents code inside your application—without coding around its rules.
 
-Bound is a clean-room implementation. External systems may be consulted for architectural lessons and documented failure modes, but their implementation code, private naming, schemas, tests, prompts, and product abstractions do not belong in this repository. Pi Agent Core is an implementation dependency for the agent loop, not the product identity or source of application authority.
+Bound Ledger is a clean-room implementation. External systems may be consulted
+for architectural lessons and documented failure modes, but their
+implementation code, private naming, schemas, tests, prompts, and product
+abstractions do not belong in this repository. Pi Agent Core is an
+implementation dependency for the agent loop, not the product identity or
+source of application authority.
 
 ## 1. Project thesis
 
@@ -44,7 +52,7 @@ The finished repository should demonstrate:
 
 The concise portfolio description is:
 
-> I built Bound, a controlled code-mode runtime where an AI can program against an application's typed SDK, but every operation still passes through the application's real authorization and execution boundary.
+> I built Bound Ledger, a controlled code-mode reference application where an AI can program against the application's typed SDK, but every operation still passes through the application's real authorization and execution boundary.
 
 Do not position the initial release as a production-ready general agent framework.
 
@@ -603,7 +611,7 @@ Run each nondeterministic model/task/mode combination multiple times. Publish sa
 ## 15. Repository structure
 
 ```text
-bound/
+bound-ledger/
   apps/
     expense-ledger/         human application and agent interface
 
@@ -638,38 +646,35 @@ This is the target shape, not required scaffolding on day one. Begin with one ap
 - TypeScript strict mode
 - pnpm workspace
 - Pi Agent Core and Pi AI
-- Effect Schema, TypeBox, or another runtime schema library selected during the API spike
+- Effect v4, including Effect Schema, for domain programs and boundary decoding
+- TypeBox only where Pi Agent Core's tool schema boundary requires it
 - React for the Expense Ledger and inspector
 - SQLite for deterministic local persistence
 - Vitest for unit and integration tests
 - Playwright for flagship UI scenarios
 - A sandbox technology selected through an explicit isolation spike
 
-Avoid cloud infrastructure in the initial version. A reviewer should be able to run the project locally with one model API key, and deterministic safety tests should require no model.
+Avoid cloud infrastructure until the Phase 5 local CLI agent path in
+`docs/INITIAL_PLAN.md` passes. A later Cloudflare proof may add a Worker only
+as a composition root; it must not replace Pi Agent Core or the application
+capability boundary. A reviewer should be able to run the project locally with
+one model API key, and deterministic safety tests must require no model.
 
 ## 17. Milestones
 
-### Milestone 0 — evidence before framework
+### Milestone 0 — trustworthy ledger core
 
-- Create a minimal Pi Agent Core spike.
-- Register three typed tools.
-- Stream events into a small console.
-- Test steering and cancellation.
-- Compare candidate sandbox technologies.
-- Write ADRs for schema and sandbox choices.
+- Decode deterministic seed data with Effect Schema.
+- Model expected failures as typed errors.
+- Add an in-memory ledger Effect service.
+- Add a second household workspace and account ownership.
+- Implement `listTransactions`, `getTransaction`, and `updateCategory`.
+- Enforce workspace and account authorization without AI.
 
-Exit condition: Pi Agent Core and the selected sandbox are understood well enough to avoid designing fictional APIs.
+Exit condition: the CLI and deterministic tests demonstrate decoded data,
+read behavior, an authorized mutation, and failure without state change.
 
-### Milestone 1 — Expense Ledger
-
-- Build the domain model and deterministic seed data.
-- Implement the human dashboard, transaction ledger, and transaction detail.
-- Add workspace and account authorization.
-- Implement 8–10 domain operations without agent integration.
-
-Exit condition: Expense Ledger is a coherent small application on its own.
-
-### Milestone 2 — capability boundary
+### Milestone 1 — capability boundary
 
 - Introduce `defineCapability` only around existing operations.
 - Build the immutable registry.
@@ -678,20 +683,35 @@ Exit condition: Expense Ledger is a coherent small application on its own.
 - Add structured capability traces.
 - Implement reads, mutations, confirmation-required, and forbidden classifications.
 
-Exit condition: the human application and direct tests can invoke every operation through one gateway.
+Exit condition: the CLI and direct tests can invoke every existing operation
+through one gateway.
 
-### Milestone 3 — tool-mode baseline
+### Milestone 2 — tool-mode baseline
 
 - Project visible capabilities into Pi `AgentTool[]`.
-- Add agent chat and event streaming.
+- Add CLI conversation and event streaming.
+- Test the adapter with a deterministic fake model stream.
+- Test steering, cancellation, and sequential execution.
 - Add tool execution traces.
-- Implement five evaluation tasks.
-- Record baseline tokens, turns, correctness, and latency.
 
-Exit condition: tool mode completes the initial tasks through the real application boundary.
+Exit condition: a deterministic request completes through Pi Agent Core and the
+real application boundary without an API key.
 
-### Milestone 4 — controlled code mode
+### Milestone 3 — coherent human application
 
+- Expand deterministic fixtures only as the application needs them.
+- Implement the human dashboard, transaction ledger, and transaction detail.
+- Add deterministic reset tooling.
+- Grow toward 8–10 domain operations without bypassing the capability gateway.
+
+Exit condition: Bound Ledger is a coherent small application without requiring
+the agent, and its existing operations use the common execution boundary.
+
+### Milestone 4 — sandbox evidence and controlled code mode
+
+- Write the sandbox threat checklist.
+- Compare candidate runtimes with executable escape and resource-limit tests.
+- Record the isolation decision and stop conditions in an ADR.
 - Generate the runtime `app` proxy.
 - Generate compact TypeScript declarations and discovery data.
 - Implement `inspect_capabilities`.
@@ -812,7 +832,7 @@ The architecture must earn its generalization.
 
 ## 20. Clean-room reference policy
 
-Define each Bound requirement locally before consulting external implementations.
+Define each Bound Ledger requirement locally before consulting external implementations.
 Reference material may be used to identify architectural pressures, security
 risks, and failure modes. Do not copy implementation code, schemas, tests,
 prompts, private naming, product abstractions, or repository-specific paths.
@@ -843,7 +863,7 @@ Relevant behaviors to understand before implementation:
 
 For each subsystem:
 
-1. State the Expense Ledger requirement in Bound's own terminology.
+1. State the Expense Ledger requirement in Bound Ledger's own terminology.
 2. Write the invariant and failing test.
 3. Implement the smallest local design.
 4. Read relevant public source material for missed failure modes.
@@ -870,13 +890,16 @@ The portfolio release is complete when:
 
 ## 24. First ten tasks
 
-1. Initialize the repository with strict TypeScript, Vitest, formatting, and linting.
-2. Create a minimal Pi Agent Core spike with three typed tools and event logging.
-3. Write the sandbox threat checklist and compare candidate runtimes.
-4. Build the first Expense Ledger vertical slice: monthly summary, transaction list, transaction detail.
-5. Add deterministic fixtures and reset tooling.
-6. Implement workspace and account authorization without AI.
-7. Wrap `transactions.list`, `transactions.get`, and `transactions.update_category` as capabilities.
-8. Implement the common invocation gateway and structured trace.
-9. Project the three capabilities into tool mode.
-10. Write the first paired evaluation task before implementing code mode.
+This list mirrors the phase gates in `docs/INITIAL_PLAN.md`; that document
+contains the executable contract for the current task.
+
+1. Initialize the monorepo with strict TypeScript, Vitest, and repository-wide typecheck and test commands. **Complete.**
+2. Decode transaction fixtures with Effect Schema and typed fixture errors.
+3. Add the in-memory ledger service for transaction listing and lookup.
+4. Add a second household workspace, account access, and `updateCategory` authorization.
+5. Wrap `transactions.list`, `transactions.get`, and `transactions.update_category` behind one capability gateway.
+6. Project the three capabilities into Pi Agent Core tools with deterministic event tests.
+7. Write the first paired evaluation task for the working tool-mode path.
+8. Build the first human-facing ledger slice without bypassing the gateway.
+9. Write the sandbox threat checklist and compare candidate runtimes.
+10. Record the sandbox ADR before implementing code mode.
