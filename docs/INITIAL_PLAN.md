@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 3 — Add trusted context and one mutation.
+**Current phase:** Phase 4 — Earn the capability package.
 
 ## Purpose
 
@@ -309,8 +309,8 @@ known limits, and the conditions that would stop the project.
 
 ## Immediate next task
 
-Implement Phase 3 only. Keep the repository at two application/package
-workspaces until its exit condition passes.
+Implement Phase 4 only. Introduce `packages/capability` now that three ledger
+operations have earned one common invocation boundary.
 
 When the current phase is complete, update **Current phase** at the top of this
 document in the same pull request. A new contributor should never need an

@@ -1,20 +1,59 @@
 import { it } from "@effect/vitest"
-import { Effect, Exit, Ref } from "effect"
+import { Effect, Exit, Layer, Ref } from "effect"
 import { describe, expect } from "vitest"
 
 import {
+  decodeFixtureAccounts,
   decodeFixtureTransactions,
+  sampleAccountsFixture,
   sampleTransactionsFixture,
 } from "./fixtures.ts"
 import { makeInMemoryLedgerLayer } from "./ledger-service.ts"
 import { summarizeMonth } from "./ledger.ts"
+import {
+  makeTrustedSessionLayer,
+  type Session,
+} from "./trusted-session.ts"
 
-const summarizeFixture = (month: string, input: unknown) =>
+const primarySession: Session = {
+  actorId: "actor_primary_owner",
+  activeWorkspaceId: "workspace_primary",
+  readableAccountIds: new Set([
+    "account_checking",
+    "account_credit",
+  ]),
+  mutableAccountIds: new Set(["account_checking"]),
+}
+
+const testAccountsFixture: unknown = [
+  {
+    id: "account_test",
+    workspaceId: "workspace_primary",
+  },
+]
+
+const testSession: Session = {
+  actorId: "actor_test",
+  activeWorkspaceId: "workspace_primary",
+  readableAccountIds: new Set(["account_test"]),
+  mutableAccountIds: new Set(["account_test"]),
+}
+
+const summarizeFixture = (
+  month: string,
+  transactionInput: unknown,
+  accountInput: unknown = testAccountsFixture,
+  session: Session = testSession,
+) =>
   Effect.gen(function* () {
-    const transactions = yield* decodeFixtureTransactions(input)
+    const transactions = yield* decodeFixtureTransactions(transactionInput)
+    const accounts = yield* decodeFixtureAccounts(accountInput)
+    const ledgerLayer = makeInMemoryLedgerLayer(transactions, accounts).pipe(
+      Layer.provide(makeTrustedSessionLayer(session)),
+    )
 
     return yield* summarizeMonth(month).pipe(
-      Effect.provide(makeInMemoryLedgerLayer(transactions)),
+      Effect.provide(ledgerLayer),
     )
   })
 
@@ -24,6 +63,8 @@ describe("summarizeMonth", () => {
       const summary = yield* summarizeFixture(
         "2026-07",
         sampleTransactionsFixture,
+        sampleAccountsFixture,
+        primarySession,
       )
 
       expect(summary).toEqual({
@@ -43,6 +84,7 @@ describe("summarizeMonth", () => {
       const summary = yield* summarizeFixture("2026-07", [
         {
           id: "txn_purchase",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "groceries",
@@ -50,6 +92,7 @@ describe("summarizeMonth", () => {
         },
         {
           id: "txn_refund",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "groceries",
@@ -67,6 +110,7 @@ describe("summarizeMonth", () => {
       const summary = yield* summarizeFixture("2026-07", [
         {
           id: "txn_constructor",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "constructor",
@@ -74,6 +118,7 @@ describe("summarizeMonth", () => {
         },
         {
           id: "txn_proto",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "__proto__",
@@ -81,6 +126,7 @@ describe("summarizeMonth", () => {
         },
         {
           id: "txn_to_string",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "toString",
@@ -103,21 +149,14 @@ describe("summarizeMonth", () => {
         decodeFixtureTransactions([
           {
             id: "txn_invalid",
+            accountId: "account_test",
             month: "2026-13",
             merchant: "Northstar Market",
             category: "groceries",
             amountCents: 1_000,
           },
         ]).pipe(
-          Effect.flatMap((transactions) =>
-            Ref.set(summaryInvoked, true).pipe(
-              Effect.andThen(
-                summarizeMonth("2026-07").pipe(
-                  Effect.provide(makeInMemoryLedgerLayer(transactions)),
-                ),
-              ),
-            ),
-          ),
+          Effect.flatMap(() => Ref.set(summaryInvoked, true)),
         ),
       )
 
