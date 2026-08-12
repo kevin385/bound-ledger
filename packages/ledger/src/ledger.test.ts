@@ -6,15 +6,25 @@ import {
   decodeFixtureTransactions,
   sampleTransactionsFixture,
 } from "./fixtures.ts"
+import { makeInMemoryLedgerLayer } from "./ledger-service.ts"
 import { summarizeMonth } from "./ledger.ts"
+
+const summarizeFixture = (month: string, input: unknown) =>
+  Effect.gen(function* () {
+    const transactions = yield* decodeFixtureTransactions(input)
+
+    return yield* summarizeMonth(month).pipe(
+      Effect.provide(makeInMemoryLedgerLayer(transactions)),
+    )
+  })
 
 describe("summarizeMonth", () => {
   it.effect("summarizes deterministic transactions using integer cents", () =>
     Effect.gen(function* () {
-      const transactions = yield* decodeFixtureTransactions(
+      const summary = yield* summarizeFixture(
+        "2026-07",
         sampleTransactionsFixture,
       )
-      const summary = yield* summarizeMonth("2026-07", transactions)
 
       expect(summary).toEqual({
         month: "2026-07",
@@ -30,7 +40,7 @@ describe("summarizeMonth", () => {
 
   it.effect("includes negative refunds in the monthly total", () =>
     Effect.gen(function* () {
-      const transactions = yield* decodeFixtureTransactions([
+      const summary = yield* summarizeFixture("2026-07", [
         {
           id: "txn_purchase",
           month: "2026-07",
@@ -46,7 +56,6 @@ describe("summarizeMonth", () => {
           amountCents: -250,
         },
       ])
-      const summary = yield* summarizeMonth("2026-07", transactions)
 
       expect(summary.totalCents).toBe(750)
       expect(summary.spendingByCategory).toEqual({ groceries: 750 })
@@ -55,7 +64,7 @@ describe("summarizeMonth", () => {
 
   it.effect("summarizes categories that match object prototype keys", () =>
     Effect.gen(function* () {
-      const transactions = yield* decodeFixtureTransactions([
+      const summary = yield* summarizeFixture("2026-07", [
         {
           id: "txn_constructor",
           month: "2026-07",
@@ -78,7 +87,6 @@ describe("summarizeMonth", () => {
           amountCents: 400,
         },
       ])
-      const summary = yield* summarizeMonth("2026-07", transactions)
 
       expect(Object.entries(summary.spendingByCategory)).toEqual([
         ["constructor", 100],
@@ -103,7 +111,11 @@ describe("summarizeMonth", () => {
         ]).pipe(
           Effect.flatMap((transactions) =>
             Ref.set(summaryInvoked, true).pipe(
-              Effect.andThen(summarizeMonth("2026-07", transactions)),
+              Effect.andThen(
+                summarizeMonth("2026-07").pipe(
+                  Effect.provide(makeInMemoryLedgerLayer(transactions)),
+                ),
+              ),
             ),
           ),
         ),

@@ -2,6 +2,7 @@ import { Console, Effect } from "effect"
 
 import {
   decodeFixtureTransactions,
+  makeInMemoryLedgerLayer,
   sampleTransactionsFixture,
   summarizeMonth,
 } from "@bound/ledger"
@@ -10,7 +11,9 @@ const program = Effect.gen(function* () {
   const transactions = yield* decodeFixtureTransactions(
     sampleTransactionsFixture,
   )
-  const summary = yield* summarizeMonth("2026-07", transactions)
+  const summary = yield* summarizeMonth("2026-07").pipe(
+    Effect.provide(makeInMemoryLedgerLayer(transactions)),
+  )
 
   yield* Console.log(JSON.stringify(summary, null, 2))
 })

@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 
-import type { Transaction } from "./transaction.ts"
+import { Ledger, type LedgerService } from "./ledger-service.ts"
 
 export interface MonthlySummary {
   readonly month: string
@@ -11,16 +11,14 @@ export interface MonthlySummary {
 
 export const summarizeMonth = (
   month: string,
-  transactions: ReadonlyArray<Transaction>,
-): Effect.Effect<MonthlySummary> =>
-  Effect.sync(() => {
-    const matching = transactions.filter(
-      (transaction) => transaction.month === month,
-    )
+): Effect.Effect<MonthlySummary, never, LedgerService> =>
+  Effect.gen(function* () {
+    const ledger = yield* Ledger
+    const transactions = yield* ledger.listTransactions(month)
 
     const spendingByCategory = new Map<string, number>()
 
-    for (const transaction of matching) {
+    for (const transaction of transactions) {
       spendingByCategory.set(
         transaction.category,
         (spendingByCategory.get(transaction.category) ?? 0) +
@@ -30,8 +28,8 @@ export const summarizeMonth = (
 
     return {
       month,
-      transactionCount: matching.length,
-      totalCents: matching.reduce(
+      transactionCount: transactions.length,
+      totalCents: transactions.reduce(
         (total, transaction) => total + transaction.amountCents,
         0,
       ),

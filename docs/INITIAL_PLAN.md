@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 2 — Add an in-memory ledger service.
+**Current phase:** Phase 3 — Add trusted context and one mutation.
 
 ## Purpose
 
@@ -309,7 +309,7 @@ known limits, and the conditions that would stop the project.
 
 ## Immediate next task
 
-Implement Phase 2 only. Keep the repository at two application/package
+Implement Phase 3 only. Keep the repository at two application/package
 workspaces until its exit condition passes.
 
 When the current phase is complete, update **Current phase** at the top of this
