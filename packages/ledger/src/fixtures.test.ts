@@ -3,14 +3,17 @@ import { Effect } from "effect"
 import { describe, expect } from "vitest"
 
 import {
+  decodeFixtureAccounts,
   decodeFixtureTransactions,
   InvalidFixtureError,
+  sampleAccountsFixture,
   sampleTransactionsFixture,
 } from "./fixtures.ts"
 
 const validFixture = (overrides: Readonly<Record<string, unknown>> = {}) => [
   {
     id: "txn_test",
+    accountId: "account_checking",
     month: "2026-07",
     merchant: "Northstar Market",
     category: "groceries",
@@ -40,7 +43,7 @@ describe("decodeFixtureTransactions", () => {
         sampleTransactionsFixture,
       )
 
-      expect(transactions).toHaveLength(3)
+      expect(transactions).toHaveLength(5)
       expect(transactions[0]?.id).toBe("txn_001")
     }),
   )
@@ -126,5 +129,16 @@ describe("decodeFixtureTransactions", () => {
           },
         }),
       ),
+  )
+
+  it.effect("decodes accounts owned by two household workspaces", () =>
+    Effect.gen(function* () {
+      const accounts = yield* decodeFixtureAccounts(sampleAccountsFixture)
+
+      expect(accounts).toHaveLength(4)
+      expect(accounts.map((account) => account.workspaceId)).toContain(
+        "workspace_secondary",
+      )
+    }),
   )
 })

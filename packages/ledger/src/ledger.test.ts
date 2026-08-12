@@ -1,20 +1,71 @@
 import { it } from "@effect/vitest"
-import { Effect, Exit, Ref } from "effect"
+import { Effect, Exit, Layer, Ref } from "effect"
 import { describe, expect } from "vitest"
 
 import {
+  decodeFixtureAccounts,
   decodeFixtureTransactions,
+  sampleAccountsFixture,
   sampleTransactionsFixture,
 } from "./fixtures.ts"
+import { makeInMemoryLedgerLayer } from "./ledger-service.ts"
 import { summarizeMonth } from "./ledger.ts"
+import {
+  makeTrustedSessionLayer,
+  type Session,
+} from "./trusted-session.ts"
+
+const primarySession: Session = {
+  actorId: "actor_primary_owner",
+  activeWorkspaceId: "workspace_primary",
+  readableAccountIds: new Set([
+    "account_checking",
+    "account_credit",
+  ]),
+  mutableAccountIds: new Set(["account_checking"]),
+}
+
+const testAccountsFixture: unknown = [
+  {
+    id: "account_test",
+    workspaceId: "workspace_primary",
+  },
+]
+
+const testSession: Session = {
+  actorId: "actor_test",
+  activeWorkspaceId: "workspace_primary",
+  readableAccountIds: new Set(["account_test"]),
+  mutableAccountIds: new Set(["account_test"]),
+}
+
+const summarizeFixture = (
+  month: string,
+  transactionInput: unknown,
+  accountInput: unknown = testAccountsFixture,
+  session: Session = testSession,
+) =>
+  Effect.gen(function* () {
+    const transactions = yield* decodeFixtureTransactions(transactionInput)
+    const accounts = yield* decodeFixtureAccounts(accountInput)
+    const ledgerLayer = makeInMemoryLedgerLayer(transactions, accounts).pipe(
+      Layer.provide(makeTrustedSessionLayer(session)),
+    )
+
+    return yield* summarizeMonth(month).pipe(
+      Effect.provide(ledgerLayer),
+    )
+  })
 
 describe("summarizeMonth", () => {
   it.effect("summarizes deterministic transactions using integer cents", () =>
     Effect.gen(function* () {
-      const transactions = yield* decodeFixtureTransactions(
+      const summary = yield* summarizeFixture(
+        "2026-07",
         sampleTransactionsFixture,
+        sampleAccountsFixture,
+        primarySession,
       )
-      const summary = yield* summarizeMonth("2026-07", transactions)
 
       expect(summary).toEqual({
         month: "2026-07",
@@ -30,9 +81,10 @@ describe("summarizeMonth", () => {
 
   it.effect("includes negative refunds in the monthly total", () =>
     Effect.gen(function* () {
-      const transactions = yield* decodeFixtureTransactions([
+      const summary = yield* summarizeFixture("2026-07", [
         {
           id: "txn_purchase",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "groceries",
@@ -40,13 +92,13 @@ describe("summarizeMonth", () => {
         },
         {
           id: "txn_refund",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "groceries",
           amountCents: -250,
         },
       ])
-      const summary = yield* summarizeMonth("2026-07", transactions)
 
       expect(summary.totalCents).toBe(750)
       expect(summary.spendingByCategory).toEqual({ groceries: 750 })
@@ -55,9 +107,10 @@ describe("summarizeMonth", () => {
 
   it.effect("summarizes categories that match object prototype keys", () =>
     Effect.gen(function* () {
-      const transactions = yield* decodeFixtureTransactions([
+      const summary = yield* summarizeFixture("2026-07", [
         {
           id: "txn_constructor",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "constructor",
@@ -65,6 +118,7 @@ describe("summarizeMonth", () => {
         },
         {
           id: "txn_proto",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "__proto__",
@@ -72,13 +126,13 @@ describe("summarizeMonth", () => {
         },
         {
           id: "txn_to_string",
+          accountId: "account_test",
           month: "2026-07",
           merchant: "Northstar Market",
           category: "toString",
           amountCents: 400,
         },
       ])
-      const summary = yield* summarizeMonth("2026-07", transactions)
 
       expect(Object.entries(summary.spendingByCategory)).toEqual([
         ["constructor", 100],
@@ -95,17 +149,14 @@ describe("summarizeMonth", () => {
         decodeFixtureTransactions([
           {
             id: "txn_invalid",
+            accountId: "account_test",
             month: "2026-13",
             merchant: "Northstar Market",
             category: "groceries",
             amountCents: 1_000,
           },
         ]).pipe(
-          Effect.flatMap((transactions) =>
-            Ref.set(summaryInvoked, true).pipe(
-              Effect.andThen(summarizeMonth("2026-07", transactions)),
-            ),
-          ),
+          Effect.flatMap(() => Ref.set(summaryInvoked, true)),
         ),
       )
 
