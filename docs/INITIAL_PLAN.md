@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 4 — Earn the capability package.
+**Current phase:** Phase 5 — Add the first agent adapter.
 
 ## Purpose
 
@@ -84,6 +84,7 @@ bound-ledger/
   apps/
     cli/                  runnable demo and Effect composition root
   packages/
+    capability/           validated and authorized invocation boundary
     ledger/               transaction model and ledger behavior
   docs/
     INITIAL_PLAN.md
@@ -92,16 +93,19 @@ bound-ledger/
   tsconfig.base.json      strict shared compiler policy
 ```
 
-There are exactly two application/package workspaces because there are
-currently two real concerns: domain behavior and process composition.
+There are exactly three application/package workspaces because there are now
+three real concerns: domain behavior, capability invocation, and process
+composition.
 
 ## Dependency rules
 
 ```text
-apps/cli  ──>  packages/ledger  ──>  effect
+apps/cli  ─┬─>  packages/capability  ──>  packages/ledger  ──>  effect
+           └────────────────────────>  packages/ledger
 ```
 
 - `packages/ledger` must not import from `apps/`.
+- `packages/capability` may depend on `packages/ledger`, but never on `apps/`.
 - `apps/cli` composes dependencies and runs programs; it owns no ledger rules.
 - Cross-workspace imports use package names such as `@bound/ledger`.
 - Consumers import from a package's declared exports, not its internal paths.
@@ -309,8 +313,9 @@ known limits, and the conditions that would stop the project.
 
 ## Immediate next task
 
-Implement Phase 4 only. Introduce `packages/capability` now that three ledger
-operations have earned one common invocation boundary.
+Implement Phase 5 only. Introduce `packages/pi-adapter`, project the three
+capabilities as sequential Pi tools, and prove the local agent path with a
+deterministic fake model stream that requires no API key.
 
 When the current phase is complete, update **Current phase** at the top of this
 document in the same pull request. A new contributor should never need an

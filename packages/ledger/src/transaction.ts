@@ -4,7 +4,7 @@ const NonEmptyTrimmedString = Schema.Trim.check(Schema.isNonEmpty())
 
 export const CategorySchema = NonEmptyTrimmedString
 
-const MonthSchema = Schema.String.check(
+export const MonthSchema = Schema.String.check(
   Schema.isPattern(/^\d{4}-(0[1-9]|1[0-2])$/),
 )
 

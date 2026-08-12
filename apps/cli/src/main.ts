@@ -1,13 +1,17 @@
 import { Console, Effect, Layer } from "effect"
 
 import {
+  CapabilityGateway,
+  makeCapabilityGatewayLayer,
+} from "@bound/capability"
+import {
   decodeFixtureAccounts,
   decodeFixtureTransactions,
   makeInMemoryLedgerLayer,
   makeTrustedSessionLayer,
   sampleAccountsFixture,
   sampleTransactionsFixture,
-  summarizeMonth,
+  summarizeTransactions,
   type Session,
 } from "@bound/ledger"
 
@@ -26,14 +30,29 @@ const program = Effect.gen(function* () {
     sampleTransactionsFixture,
   )
   const accounts = yield* decodeFixtureAccounts(sampleAccountsFixture)
+  const sessionLayer = makeTrustedSessionLayer(session)
   const ledgerLayer = makeInMemoryLedgerLayer(transactions, accounts).pipe(
-    Layer.provide(makeTrustedSessionLayer(session)),
+    Layer.provide(sessionLayer),
   )
-  const summary = yield* summarizeMonth("2026-07").pipe(
-    Effect.provide(ledgerLayer),
+  const capabilityLayer = makeCapabilityGatewayLayer().pipe(
+    Layer.provide(Layer.merge(ledgerLayer, sessionLayer)),
+  )
+  const result = yield* CapabilityGateway.use((gateway) =>
+    Effect.gen(function* () {
+      const visibleTransactions = yield* gateway.invoke("transactions.list", {
+        month: "2026-07",
+      })
+
+      return {
+        summary: summarizeTransactions("2026-07", visibleTransactions),
+        capabilityAttempts: yield* gateway.attempts,
+      }
+    }),
+  ).pipe(
+    Effect.provide(capabilityLayer),
   )
 
-  yield* Console.log(JSON.stringify(summary, null, 2))
+  yield* Console.log(JSON.stringify(result, null, 2))
 })
 
 Effect.runPromise(program).catch((error: unknown) => {

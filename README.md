@@ -9,6 +9,7 @@ not a framework and does not yet contain agent, sandbox, database, or UI code.
 
 ```text
 apps/cli          runnable composition root
+packages/capability validated and authorized invocation boundary
 packages/ledger   expense-ledger behavior and tests
 ```
 
@@ -25,7 +26,8 @@ pnpm start
 pnpm check
 ```
 
-`pnpm start` prints a monthly summary calculated from a deterministic fixture.
+`pnpm start` prints a monthly summary and its structured capability attempt,
+calculated from a deterministic fixture.
 `pnpm check` typechecks and tests every workspace.
 
 ## Project status
