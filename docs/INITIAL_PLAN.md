@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 1 — Make the tiny ledger trustworthy.
+**Current phase:** Phase 2 — Add an in-memory ledger service.
 
 ## Purpose
 
@@ -129,8 +129,9 @@ typed error. Summary behavior must receive decoded transactions only.
 packages/ledger/src/
   transaction.ts          schemas and schema-derived domain types
   fixtures.ts             unknown fixture input and fixture decoder
+  fixtures.test.ts        fixture decoding and validation boundary tests
   ledger.ts               summary behavior over decoded transactions
-  ledger.test.ts          boundary and summary tests
+  ledger.test.ts          summary behavior and decoded-input flow tests
   index.ts                explicit public exports
 apps/cli/src/main.ts       decode, summarize, and render at the composition root
 ```
@@ -153,11 +154,18 @@ schema failure details without exposing raw secrets.
 
 ### Required tests
 
-- The existing July fixture decodes and produces the unchanged summary.
+`fixtures.test.ts` owns fixture-decoding and validation-boundary coverage:
+
+- The existing July fixture decodes.
 - An invalid calendar month is rejected.
 - A blank merchant or category is rejected.
 - A fractional cent amount is rejected.
 - A negative refund amount is accepted.
+
+`ledger.test.ts` owns summary behavior and verifies that invalid fixture input
+fails before summary behavior is invoked:
+
+- The decoded July fixture produces the unchanged summary.
 - Invalid fixture input fails before summary behavior is invoked.
 
 ### Verification
@@ -301,7 +309,7 @@ known limits, and the conditions that would stop the project.
 
 ## Immediate next task
 
-Implement Phase 1 only. Keep the repository at two application/package
+Implement Phase 2 only. Keep the repository at two application/package
 workspaces until its exit condition passes.
 
 When the current phase is complete, update **Current phase** at the top of this

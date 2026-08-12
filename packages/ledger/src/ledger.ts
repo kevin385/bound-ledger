@@ -1,12 +1,6 @@
 import { Effect } from "effect"
 
-export interface Transaction {
-  readonly id: string
-  readonly month: string
-  readonly merchant: string
-  readonly category: string
-  readonly amountCents: number
-}
+import type { Transaction } from "./transaction.ts"
 
 export interface MonthlySummary {
   readonly month: string
@@ -24,12 +18,14 @@ export const summarizeMonth = (
       (transaction) => transaction.month === month,
     )
 
-    const spendingByCategory: Record<string, number> = {}
+    const spendingByCategory = new Map<string, number>()
 
     for (const transaction of matching) {
-      spendingByCategory[transaction.category] =
-        (spendingByCategory[transaction.category] ?? 0) +
-        transaction.amountCents
+      spendingByCategory.set(
+        transaction.category,
+        (spendingByCategory.get(transaction.category) ?? 0) +
+          transaction.amountCents,
+      )
     }
 
     return {
@@ -39,30 +35,6 @@ export const summarizeMonth = (
         (total, transaction) => total + transaction.amountCents,
         0,
       ),
-      spendingByCategory,
+      spendingByCategory: Object.fromEntries(spendingByCategory),
     }
   })
-
-export const sampleTransactions: ReadonlyArray<Transaction> = [
-  {
-    id: "txn_001",
-    month: "2026-07",
-    merchant: "Northstar Market",
-    category: "groceries",
-    amountCents: 4_250,
-  },
-  {
-    id: "txn_002",
-    month: "2026-07",
-    merchant: "Orbit Mobile",
-    category: "utilities",
-    amountCents: 1_999,
-  },
-  {
-    id: "txn_003",
-    month: "2026-07",
-    merchant: "Northstar Market",
-    category: "groceries",
-    amountCents: 2_175,
-  },
-]
