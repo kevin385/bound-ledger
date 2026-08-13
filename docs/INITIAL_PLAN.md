@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 6 — Evaluate code-mode feasibility.
+**Current phase:** Phase 7 — Build the controlled code-mode proof.
 
 ## Purpose
 
@@ -88,7 +88,11 @@ bound-ledger/
     ledger/               transaction model and ledger behavior
     pi-adapter/            Pi tool projection and event translation
   docs/
+    adr/0001-experimental-code-sandbox.md
+    CODE_MODE_THREAT_MODEL.md
     INITIAL_PLAN.md
+  experiments/
+    sandbox/              executable runtime comparison and threat probes
   package.json            repository commands
   pnpm-workspace.yaml     workspaces and dependency catalog
   tsconfig.base.json      strict shared compiler policy
@@ -303,6 +307,39 @@ resource-limit tests before creating `packages/code-mode`.
 **Exit condition:** an ADR records the experimental isolation boundary, its
 known limits, and the conditions that would stop the project.
 
+Phase 6 selected a fresh QuickJS-WASM runtime inside a disposable child process
+for a local proof only. The evidence is in
+[`experiments/sandbox`](../experiments/sandbox), the threat model is
+[`CODE_MODE_THREAT_MODEL.md`](CODE_MODE_THREAT_MODEL.md), and the decision is
+[`ADR 0001`](adr/0001-experimental-code-sandbox.md).
+
+## Phase 7 — Build the controlled code-mode proof
+
+Create `packages/code-mode` now that the sandbox decision gate has passed.
+Implement the smallest generated `app` proxy and execution boundary that can
+list July 2026 transactions through the existing capability gateway.
+
+The implementation must follow ADR 0001:
+
+- one fresh QuickJS-WASM runtime in one disposable child process per program;
+- an explicit size-bounded serialization protocol with no host references;
+- trusted session context, authorization, and attempt recording remain in the
+  parent-owned capability gateway;
+- wall-clock, memory, stack, program, result, capability-call, mutation-call,
+  and recursion limits are enforced;
+- abort stops the runtime and any pending gateway request;
+- no network, filesystem, environment, process, timer, import, database, or
+  direct ledger access is exposed.
+
+Extend the executable evidence with bridge, recursive-call, call-budget,
+mutation-budget, abort, authority-change, and host-reference-retention tests.
+Do not add a general harness, tracing package, web surface, or live model path.
+
+**Exit condition:** a deterministic generated program lists July transactions
+through `@bound/code-mode` and the real capability gateway, records the same
+capability attempt as tool mode, and all sandbox/bridge escape and resource
+tests pass without an API key.
+
 ## Packages that must earn their existence
 
 | Package | Add when |
@@ -317,10 +354,10 @@ known limits, and the conditions that would stop the project.
 
 ## Immediate next task
 
-Implement Phase 6 only. Write the code-mode threat model, compare candidate
-sandbox runtimes with executable escape and resource-limit tests, and record
-the isolation decision and stop conditions in an ADR before creating
-`packages/code-mode`.
+Implement Phase 7 only. Create the minimal `@bound/code-mode` package and make
+one deterministic generated program list July 2026 transactions through the
+existing capability gateway while satisfying ADR 0001 and the extended
+sandbox/bridge tests.
 
 When the current phase is complete, update **Current phase** at the top of this
 document in the same pull request. A new contributor should never need an
