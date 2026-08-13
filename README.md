@@ -5,14 +5,16 @@ remain the authority whether an AI invokes them as tools or through generated
 code.
 
 The repository is deliberately a small Effect v4 monorepo with a deterministic
-Pi Agent Core path. It is not a framework and does not yet contain sandbox,
-database, or UI code.
+Pi Agent Core path. A Phase 6 experiment selected a subprocess-isolated
+QuickJS-WASM boundary for the next local proof; it is not a production sandbox
+or framework and the repository does not contain database or UI code.
 
 ```text
 apps/cli          runnable composition root
 packages/capability validated and authorized invocation boundary
 packages/ledger   expense-ledger behavior and tests
 packages/pi-adapter Pi tool projection and event translation
+experiments/sandbox executable runtime comparison and threat probes
 ```
 
 ## Requirements
@@ -32,6 +34,8 @@ pnpm check
 transactions and prints its agent events and structured capability attempt. It
 uses Pi's in-memory faux provider and requires no API key.
 `pnpm check` typechecks and tests every workspace.
+`pnpm test:sandbox` runs the pinned QuickJS-WASM and `isolated-vm` escape and
+resource-limit comparison in disposable child processes.
 
 ## Project status
 

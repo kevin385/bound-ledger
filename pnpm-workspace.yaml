@@ -15,5 +15,6 @@ catalog:
 allowBuilds:
   "@google/genai": false
   esbuild: true
+  isolated-vm: true
   msgpackr-extract: false
   protobufjs: false

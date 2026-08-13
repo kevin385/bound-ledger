@@ -19,8 +19,13 @@
   "scripts": {
     "dev": "pnpm --filter @bound/cli dev",
     "start": "pnpm --filter @bound/cli start",
-    "test": "pnpm -r --if-present test",
+    "test": "pnpm -r --if-present test && pnpm test:sandbox",
+    "test:sandbox": "node --no-node-snapshot --test experiments/sandbox/*.test.ts",
     "typecheck": "pnpm -r --if-present typecheck",
     "check": "pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "isolated-vm": "6.2.0",
+    "quickjs-emscripten": "0.32.0"
   }
 }
