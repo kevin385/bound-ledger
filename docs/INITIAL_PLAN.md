@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 5 — Add the first agent adapter.
+**Current phase:** Phase 6 — Evaluate code-mode feasibility.
 
 ## Purpose
 
@@ -86,6 +86,7 @@ bound-ledger/
   packages/
     capability/           validated and authorized invocation boundary
     ledger/               transaction model and ledger behavior
+    pi-adapter/            Pi tool projection and event translation
   docs/
     INITIAL_PLAN.md
   package.json            repository commands
@@ -93,19 +94,22 @@ bound-ledger/
   tsconfig.base.json      strict shared compiler policy
 ```
 
-There are exactly three application/package workspaces because there are now
-three real concerns: domain behavior, capability invocation, and process
-composition.
+There are exactly four application/package workspaces because there are now
+four real concerns: domain behavior, capability invocation, model-facing Pi
+adaptation, and process composition.
 
 ## Dependency rules
 
 ```text
-apps/cli  ─┬─>  packages/capability  ──>  packages/ledger  ──>  effect
-           └────────────────────────>  packages/ledger
+apps/cli  ─┬─>  packages/pi-adapter  ──>  packages/capability  ──>  packages/ledger
+           ├────────────────────────>  packages/capability
+           └────────────────────────────────────────────────>  packages/ledger
 ```
 
 - `packages/ledger` must not import from `apps/`.
 - `packages/capability` may depend on `packages/ledger`, but never on `apps/`.
+- `packages/pi-adapter` owns Pi tool projection and event translation. It may
+  depend on `packages/capability`, but never on `apps/` or ledger internals.
 - `apps/cli` composes dependencies and runs programs; it owns no ledger rules.
 - Cross-workspace imports use package names such as `@bound/ledger`.
 - Consumers import from a package's declared exports, not its internal paths.
@@ -313,9 +317,10 @@ known limits, and the conditions that would stop the project.
 
 ## Immediate next task
 
-Implement Phase 5 only. Introduce `packages/pi-adapter`, project the three
-capabilities as sequential Pi tools, and prove the local agent path with a
-deterministic fake model stream that requires no API key.
+Implement Phase 6 only. Write the code-mode threat model, compare candidate
+sandbox runtimes with executable escape and resource-limit tests, and record
+the isolation decision and stop conditions in an ADR before creating
+`packages/code-mode`.
 
 When the current phase is complete, update **Current phase** at the top of this
 document in the same pull request. A new contributor should never need an
