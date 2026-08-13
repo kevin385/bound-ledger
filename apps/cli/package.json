@@ -11,6 +11,8 @@
   "dependencies": {
     "@bound/capability": "workspace:*",
     "@bound/ledger": "workspace:*",
+    "@bound/pi-adapter": "workspace:*",
+    "@earendil-works/pi-ai": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {

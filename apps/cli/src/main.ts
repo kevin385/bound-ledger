@@ -4,6 +4,14 @@ import {
   CapabilityGateway,
   makeCapabilityGatewayLayer,
 } from "@bound/capability"
+import { runLedgerAgentPrompt } from "@bound/pi-adapter"
+import {
+  createModels,
+  fauxAssistantMessage,
+  fauxProvider,
+  fauxText,
+  fauxToolCall,
+} from "@earendil-works/pi-ai"
 import {
   decodeFixtureAccounts,
   decodeFixtureTransactions,
@@ -11,7 +19,6 @@ import {
   makeTrustedSessionLayer,
   sampleAccountsFixture,
   sampleTransactionsFixture,
-  summarizeTransactions,
   type Session,
 } from "@bound/ledger"
 
@@ -24,6 +31,8 @@ const session: Session = {
   ]),
   mutableAccountIds: new Set(["account_checking"]),
 }
+
+const prompt = "List my July 2026 transactions."
 
 const program = Effect.gen(function* () {
   const transactions = yield* decodeFixtureTransactions(
@@ -39,12 +48,62 @@ const program = Effect.gen(function* () {
   )
   const result = yield* CapabilityGateway.use((gateway) =>
     Effect.gen(function* () {
-      const visibleTransactions = yield* gateway.invoke("transactions.list", {
-        month: "2026-07",
+      const faux = fauxProvider({
+        provider: "bound-ledger-cli",
+        tokenSize: { min: 12, max: 12 },
       })
+      const models = createModels()
+
+      models.setProvider(faux.provider)
+      faux.setResponses([
+        fauxAssistantMessage(
+          fauxToolCall(
+            "transactions_list",
+            { month: "2026-07" },
+            { id: "call_list_july" },
+          ),
+          { stopReason: "toolUse" },
+        ),
+        (context) => {
+          const toolResult = context.messages.findLast(
+            (message) => message.role === "toolResult",
+          )
+          const text =
+            toolResult?.role === "toolResult"
+              ? toolResult.content.find((content) => content.type === "text")
+                  ?.text
+              : undefined
+          const visibleTransactions = JSON.parse(text ?? "[]") as ReadonlyArray<{
+            readonly id: string
+            readonly merchant: string
+            readonly amountCents: number
+          }>
+
+          return fauxAssistantMessage(
+            fauxText(
+              `Found ${visibleTransactions.length} July transactions: ${visibleTransactions
+                .map(
+                  (transaction) =>
+                    `${transaction.id} (${transaction.merchant}, ${transaction.amountCents} cents)`,
+                )
+                .join(", ")}.`,
+            ),
+          )
+        },
+      ])
+
+      const agent = yield* Effect.promise(() =>
+        runLedgerAgentPrompt(prompt, {
+          gateway,
+          model: faux.getModel(),
+          streamFn: models.streamSimple.bind(models),
+        }),
+      )
 
       return {
-        summary: summarizeTransactions("2026-07", visibleTransactions),
+        prompt,
+        assistant: agent.text,
+        agentEvents: agent.events,
         capabilityAttempts: yield* gateway.attempts,
       }
     }),
