@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 7 — Build the controlled code-mode proof.
+**Current phase:** Phase 8 — Add the bounded code-mode agent projection.
 
 ## Purpose
 
@@ -85,6 +85,7 @@ bound-ledger/
     cli/                  runnable demo and Effect composition root
   packages/
     capability/           validated and authorized invocation boundary
+    code-mode/            bounded guest SDK and subprocess execution bridge
     ledger/               transaction model and ledger behavior
     pi-adapter/            Pi tool projection and event translation
   docs/
@@ -98,22 +99,26 @@ bound-ledger/
   tsconfig.base.json      strict shared compiler policy
 ```
 
-There are exactly four application/package workspaces because there are now
-four real concerns: domain behavior, capability invocation, model-facing Pi
-adaptation, and process composition.
+There are exactly five application/package workspaces because there are now
+five real concerns: domain behavior, capability invocation, bounded generated
+code execution, model-facing Pi adaptation, and process composition.
 
 ## Dependency rules
 
 ```text
 apps/cli  ─┬─>  packages/pi-adapter  ──>  packages/capability  ──>  packages/ledger
-           ├────────────────────────>  packages/capability
-           └────────────────────────────────────────────────>  packages/ledger
+           ├─>  packages/code-mode  ───>  packages/capability
+           ├──────────────────────────>  packages/capability
+           └──────────────────────────────────────────────────>  packages/ledger
 ```
 
 - `packages/ledger` must not import from `apps/`.
 - `packages/capability` may depend on `packages/ledger`, but never on `apps/`.
 - `packages/pi-adapter` owns Pi tool projection and event translation. It may
   depend on `packages/capability`, but never on `apps/` or ledger internals.
+- `packages/code-mode` owns the generated guest SDK and isolated execution
+  bridge. It may depend on `packages/capability`, but never on `apps/`, ledger
+  internals, or trusted session construction.
 - `apps/cli` composes dependencies and runs programs; it owns no ledger rules.
 - Cross-workspace imports use package names such as `@bound/ledger`.
 - Consumers import from a package's declared exports, not its internal paths.
@@ -340,6 +345,34 @@ through `@bound/code-mode` and the real capability gateway, records the same
 capability attempt as tool mode, and all sandbox/bridge escape and resource
 tests pass without an API key.
 
+Phase 7 uses a pure guest-side generator SDK: `yield*` emits serialized
+capability requests, and the parent resumes the same QuickJS generator with
+serialized gateway responses. No host callback or trusted object enters the
+runtime. The CLI and deterministic tests exercise the real gateway.
+
+## Phase 8 — Add the bounded code-mode agent projection
+
+Project code mode into Pi Agent Core only after the direct Phase 7 boundary is
+stable. Add one sequential `execute_code` tool and one compact capability
+discovery surface owned by `@bound/pi-adapter`; reuse `@bound/code-mode` and do
+not create another agent loop or execution path.
+
+Use a deterministic fake model stream that emits the checked-in July listing
+program. The adapter must present the generator SDK syntax and limits clearly,
+translate execution events, and return only serialized result/metadata. It must
+not expose the gateway, trusted session, raw schemas, interpreter handles, or
+child-process controls to the model.
+
+Add paired deterministic coverage showing the existing tool projection and the
+new code projection produce the same July result and core capability attempt.
+Keep outer tool execution sequential. Do not add a UI, live model requirement,
+general evaluation framework, or additional domain operations.
+
+**Exit condition:** a deterministic prompt completes through Pi Agent Core's
+`execute_code` tool, the real `@bound/code-mode` boundary, and the real
+capability gateway without an API key; its result and core attempt equal the
+existing tool-mode path.
+
 ## Packages that must earn their existence
 
 | Package | Add when |
@@ -354,10 +387,10 @@ tests pass without an API key.
 
 ## Immediate next task
 
-Implement Phase 7 only. Create the minimal `@bound/code-mode` package and make
-one deterministic generated program list July 2026 transactions through the
-existing capability gateway while satisfying ADR 0001 and the extended
-sandbox/bridge tests.
+Implement Phase 8 only. Add the smallest sequential Pi `execute_code` and
+capability-discovery projection over `@bound/code-mode`, then prove with a
+deterministic fake stream that code and tool modes produce the same July result
+and capability attempt.
 
 When the current phase is complete, update **Current phase** at the top of this
 document in the same pull request. A new contributor should never need an

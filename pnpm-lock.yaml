@@ -21,6 +21,9 @@ catalogs:
     effect:
       specifier: 4.0.0-beta.107
       version: 4.0.0-beta.107
+    quickjs-emscripten:
+      specifier: 0.32.0
+      version: 0.32.0
     typebox:
       specifier: 1.3.7
       version: 1.3.7
@@ -39,7 +42,7 @@ importers:
         specifier: 6.2.0
         version: 6.2.0
       quickjs-emscripten:
-        specifier: 0.32.0
+        specifier: 'catalog:'
         version: 0.32.0
 
   apps/cli:
@@ -47,6 +50,9 @@ importers:
       '@bound/capability':
         specifier: workspace:*
         version: link:../../packages/capability
+      '@bound/code-mode':
+        specifier: workspace:*
+        version: link:../../packages/code-mode
       '@bound/ledger':
         specifier: workspace:*
         version: link:../../packages/ledger
@@ -79,6 +85,34 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-beta.107(effect@4.0.0-beta.107)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(tsx@4.23.12)(yaml@2.9.0)))
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/code-mode:
+    dependencies:
+      '@bound/capability':
+        specifier: workspace:*
+        version: link:../capability
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-beta.107
+      quickjs-emscripten:
+        specifier: 'catalog:'
+        version: 0.32.0
+    devDependencies:
+      '@bound/ledger':
+        specifier: workspace:*
+        version: link:../ledger
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.0.0-beta.107(effect@4.0.0-beta.107)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(tsx@4.23.12)(yaml@2.9.0)))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.2.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

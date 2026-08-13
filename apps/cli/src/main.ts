@@ -4,6 +4,10 @@ import {
   CapabilityGateway,
   makeCapabilityGatewayLayer,
 } from "@bound/capability"
+import {
+  executeCode,
+  LIST_JULY_TRANSACTIONS_PROGRAM,
+} from "@bound/code-mode"
 import { runLedgerAgentPrompt } from "@bound/pi-adapter"
 import {
   createModels,
@@ -99,11 +103,20 @@ const program = Effect.gen(function* () {
           streamFn: models.streamSimple.bind(models),
         }),
       )
+      const toolModeAttempts = yield* gateway.attempts
+      const codeMode = yield* Effect.promise(() =>
+        executeCode(LIST_JULY_TRANSACTIONS_PROGRAM, { gateway }),
+      )
 
       return {
         prompt,
         assistant: agent.text,
         agentEvents: agent.events,
+        codeMode: {
+          program: LIST_JULY_TRANSACTIONS_PROGRAM.trim(),
+          ...codeMode,
+        },
+        toolModeAttempts,
         capabilityAttempts: yield* gateway.attempts,
       }
     }),

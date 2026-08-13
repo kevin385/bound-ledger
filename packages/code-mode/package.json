@@ -1,0 +1,26 @@
+{
+  "name": "@bound/code-mode",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bound/capability": "workspace:*",
+    "effect": "catalog:",
+    "quickjs-emscripten": "catalog:"
+  },
+  "devDependencies": {
+    "@bound/ledger": "workspace:*",
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
