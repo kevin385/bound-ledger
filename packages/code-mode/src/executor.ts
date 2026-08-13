@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url"
 import { Effect, Result } from "effect"
 
 import {
-  ledgerCapabilities,
   type CapabilityGatewayService,
   type CapabilityInvocationError,
 } from "@bound/capability"
@@ -17,6 +16,11 @@ import {
   CodeModeProtocolError,
 } from "./errors.ts"
 import {
+  resolveCodeModeLimits,
+  type CodeModeLimits,
+  type ResolvedCodeModeLimits,
+} from "./limits.ts"
+import {
   byteLength,
   isWorkerMessage,
   parseCapabilityRequest,
@@ -26,30 +30,6 @@ import {
 } from "./protocol.ts"
 
 const workerPath = fileURLToPath(new URL("./worker.ts", import.meta.url))
-
-const DEFAULT_LIMITS = {
-  capabilityCalls: 8,
-  memoryBytes: 16 * 1024 * 1024,
-  mutationCalls: 1,
-  programBytes: 64 * 1024,
-  recursionDepth: 1,
-  resultBytes: 64 * 1024,
-  stackBytes: 512 * 1024,
-  runtimeMilliseconds: 1_000,
-  wallClockMilliseconds: 2_000,
-} as const
-
-export interface CodeModeLimits {
-  readonly capabilityCalls?: number
-  readonly memoryBytes?: number
-  readonly mutationCalls?: number
-  readonly programBytes?: number
-  readonly recursionDepth?: number
-  readonly resultBytes?: number
-  readonly stackBytes?: number
-  readonly runtimeMilliseconds?: number
-  readonly wallClockMilliseconds?: number
-}
 
 export interface ExecuteCodeOptions {
   readonly gateway: CapabilityGatewayService
@@ -62,36 +42,6 @@ export interface CodeModeRunResult {
   readonly capabilityCalls: number
   readonly mutationCalls: number
 }
-
-interface ResolvedLimits {
-  readonly capabilityCalls: number
-  readonly memoryBytes: number
-  readonly mutationCalls: number
-  readonly programBytes: number
-  readonly recursionDepth: number
-  readonly resultBytes: number
-  readonly stackBytes: number
-  readonly runtimeMilliseconds: number
-  readonly wallClockMilliseconds: number
-}
-
-const capabilityKinds = new Map(
-  ledgerCapabilities.map((definition) => [definition.name, definition.kind]),
-)
-
-const resolveLimits = (limits: CodeModeLimits | undefined): ResolvedLimits => ({
-  capabilityCalls: limits?.capabilityCalls ?? DEFAULT_LIMITS.capabilityCalls,
-  memoryBytes: limits?.memoryBytes ?? DEFAULT_LIMITS.memoryBytes,
-  mutationCalls: limits?.mutationCalls ?? DEFAULT_LIMITS.mutationCalls,
-  programBytes: limits?.programBytes ?? DEFAULT_LIMITS.programBytes,
-  recursionDepth: limits?.recursionDepth ?? DEFAULT_LIMITS.recursionDepth,
-  resultBytes: limits?.resultBytes ?? DEFAULT_LIMITS.resultBytes,
-  stackBytes: limits?.stackBytes ?? DEFAULT_LIMITS.stackBytes,
-  runtimeMilliseconds:
-    limits?.runtimeMilliseconds ?? DEFAULT_LIMITS.runtimeMilliseconds,
-  wallClockMilliseconds:
-    limits?.wallClockMilliseconds ?? DEFAULT_LIMITS.wallClockMilliseconds,
-})
 
 const limitError = (
   limit: CodeModeLimitError["limit"],
@@ -117,7 +67,18 @@ export const executeCode = (
   program: string,
   options: ExecuteCodeOptions,
 ): Promise<CodeModeRunResult> => {
-  const limits = resolveLimits(options.limits)
+  let limits: ResolvedCodeModeLimits
+  try {
+    limits = resolveCodeModeLimits(options.limits)
+  } catch (error) {
+    return Promise.reject(error)
+  }
+  const capabilityKinds = new Map(
+    options.gateway.capabilities.map((capability) => [
+      capability.name,
+      capability.kind,
+    ]),
+  )
   if (byteLength(program) > limits.programBytes) {
     return Promise.reject(
       limitError(

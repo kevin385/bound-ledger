@@ -18,6 +18,7 @@ import {
   InvalidCapabilityInputError,
   InvalidCapabilityOutputError,
   type CapabilityDefinition,
+  type CapabilityMetadata,
 } from "./capability.ts"
 import {
   CapabilityGateway,
@@ -64,6 +65,59 @@ const withSampleGateway = <A, E>(
   })
 
 describe("CapabilityGateway", () => {
+  it.effect("exposes immutable metadata from the configured registry", () => {
+    const definition = defineCapability({
+      name: "test.registry_authority",
+      description: "Prove the configured registry is authoritative",
+      kind: "mutation",
+      input: Schema.Struct({}),
+      output: Schema.Struct({}),
+      authorize: () => Effect.void,
+      execute: () => Effect.succeed({}),
+    })
+
+    return withSampleGateway(
+      (gateway) =>
+        Effect.sync(() => {
+          const mutableCapabilities =
+            gateway.capabilities as Array<CapabilityMetadata>
+          const mutableCapability = gateway.capabilities[0] as {
+            name: string
+          }
+
+          expect(gateway.capabilities).toEqual([
+            {
+              name: "test.registry_authority",
+              description: "Prove the configured registry is authoritative",
+              kind: "mutation",
+            },
+          ])
+          expect(Object.isFrozen(gateway.capabilities)).toBe(true)
+          expect(Object.isFrozen(gateway.capabilities[0])).toBe(true)
+
+          expect(() =>
+            mutableCapabilities.push({
+              name: "test.injected",
+              description: "Must not reach the registry",
+              kind: "read",
+            }),
+          ).toThrow(TypeError)
+          expect(() => {
+            mutableCapability.name = "test.replaced"
+          }).toThrow(TypeError)
+
+          expect(gateway.capabilities).toEqual([
+            {
+              name: "test.registry_authority",
+              description: "Prove the configured registry is authoritative",
+              kind: "mutation",
+            },
+          ])
+        }),
+      { definitions: [definition] },
+    )
+  })
+
   it.effect("invokes all three ledger operations through one path", () =>
     withSampleGateway((gateway) =>
       Effect.gen(function* () {

@@ -60,7 +60,29 @@ const invoke = (
 ): CapabilityGatewayService["invoke"] =>
   implementation as CapabilityGatewayService["invoke"]
 
+const listCapability = Object.freeze({
+  name: "transactions.list",
+  description: "List readable transactions for a calendar month",
+  kind: "read" as const,
+})
+
 describe("executeCode", () => {
+  it("rejects invalid limit configuration through the promise API", async () => {
+    const gateway = await makeSampleGateway()
+
+    await expect(
+      executeCode(`return "must not execute";`, {
+        gateway,
+        limits: { runtimeMilliseconds: Number.NaN },
+      }),
+    ).rejects.toMatchObject({
+      _tag: "CodeModeConfigurationError",
+      setting: "runtimeMilliseconds",
+      value: Number.NaN,
+    })
+    expect(await Effect.runPromise(gateway.attempts)).toEqual([])
+  })
+
   it("lists July transactions through the same gateway and attempt shape as tool mode", async () => {
     const codeGateway = await makeSampleGateway()
     const toolGateway = await makeSampleGateway()
@@ -176,6 +198,7 @@ describe("executeCode", () => {
   it("re-authorizes every call and returns refusals as guest errors", async () => {
     let calls = 0
     const gateway: CapabilityGatewayService = {
+      capabilities: [listCapability],
       invoke: invoke(() => {
         calls += 1
         return calls === 1
@@ -220,6 +243,7 @@ describe("executeCode", () => {
       input: { transactionId: "txn_001", category: "shopping" },
     }
     const gateway: CapabilityGatewayService = {
+      capabilities: [listCapability],
       invoke: invoke(() => {
         calls += 1
         return Effect.succeed(requestShapedData)
@@ -244,6 +268,7 @@ describe("executeCode", () => {
       invocationStarted = resolve
     })
     const gateway: CapabilityGatewayService = {
+      capabilities: [listCapability],
       invoke: invoke(() => {
         invocationStarted?.()
         return Effect.never

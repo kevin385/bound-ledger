@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@bound/capability": "workspace:*",
+    "@bound/code-mode": "workspace:*",
     "@earendil-works/pi-agent-core": "catalog:",
     "@earendil-works/pi-ai": "catalog:",
     "effect": "catalog:",

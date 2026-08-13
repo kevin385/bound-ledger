@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 8 — Add the bounded code-mode agent projection.
+**Current phase:** Phase 9 — Record the first paired evaluation task.
 
 ## Purpose
 
@@ -106,16 +106,18 @@ code execution, model-facing Pi adaptation, and process composition.
 ## Dependency rules
 
 ```text
-apps/cli  ─┬─>  packages/pi-adapter  ──>  packages/capability  ──>  packages/ledger
-           ├─>  packages/code-mode  ───>  packages/capability
-           ├──────────────────────────>  packages/capability
-           └──────────────────────────────────────────────────>  packages/ledger
+apps/cli  ─┬─>  packages/pi-adapter  ─┬─>  packages/code-mode  ─┐
+           │                           └─>  packages/capability  ├─>  packages/ledger
+           ├─>  packages/code-mode  ─────>  packages/capability  │
+           ├────────────────────────────>  packages/capability  │
+           └───────────────────────────────────────────────────>  packages/ledger
 ```
 
 - `packages/ledger` must not import from `apps/`.
 - `packages/capability` may depend on `packages/ledger`, but never on `apps/`.
-- `packages/pi-adapter` owns Pi tool projection and event translation. It may
-  depend on `packages/capability`, but never on `apps/` or ledger internals.
+- `packages/pi-adapter` owns Pi tool/code projection and event translation. It
+  may depend on `packages/capability` and `packages/code-mode`, but never on
+  `apps/` or ledger internals.
 - `packages/code-mode` owns the generated guest SDK and isolated execution
   bridge. It may depend on `packages/capability`, but never on `apps/`, ledger
   internals, or trusted session construction.
@@ -373,6 +375,34 @@ general evaluation framework, or additional domain operations.
 capability gateway without an API key; its result and core attempt equal the
 existing tool-mode path.
 
+Phase 8 keeps one Pi Agent Core loop per run and selects an explicit projection
+mode. Code mode exposes exactly one sequential `execute_code` tool. Its compact
+guide is built from immutable gateway metadata, Pi-owned SDK spellings, and
+validated code-mode limits. Paired fake-model coverage proves the tool and code
+projections return the same July result and capability attempt.
+
+## Phase 9 — Record the first paired evaluation task
+
+Create one versioned evaluation task for the existing July listing prompt. Run
+the tool and code projections from identical reset fixture state and record a
+small comparable result for each mode: final answer, capability attempts, outer
+model turns/tool calls, inner capability-call count, duration, and deterministic
+correctness/safety scores.
+
+Keep this as one concrete task and runner; do not create `@bound/testing`, a
+general evaluation framework, UI, persistence, or live-model requirement. Raw
+timing is diagnostic only because the faux provider is deterministic and the
+code path starts a subprocess.
+
+The scorer must verify the three expected July transaction IDs, one authorized
+`transactions.list` attempt, no mutation, no inaccessible transaction, and no
+extra capability call. Commit the task version and a reproducible summary, but
+do not claim broader code-mode advantage from one task.
+
+**Exit condition:** one repository command runs the paired task without an API
+key, fails on result/attempt/safety divergence, and emits a versioned summary
+that clearly labels the sample size and deterministic configuration.
+
 ## Packages that must earn their existence
 
 | Package | Add when |
@@ -387,10 +417,9 @@ existing tool-mode path.
 
 ## Immediate next task
 
-Implement Phase 8 only. Add the smallest sequential Pi `execute_code` and
-capability-discovery projection over `@bound/code-mode`, then prove with a
-deterministic fake stream that code and tool modes produce the same July result
-and capability attempt.
+Implement Phase 9 only. Add one versioned July-list paired evaluation task and
+the smallest deterministic runner/scorer needed to compare the existing Pi
+tool and code projections from reset fixture state.
 
 When the current phase is complete, update **Current phase** at the top of this
 document in the same pull request. A new contributor should never need an

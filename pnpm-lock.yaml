@@ -141,6 +141,9 @@ importers:
       '@bound/capability':
         specifier: workspace:*
         version: link:../capability
+      '@bound/code-mode':
+        specifier: workspace:*
+        version: link:../code-mode
       '@earendil-works/pi-agent-core':
         specifier: 'catalog:'
         version: 0.84.1(ws@8.21.3)(zod@4.4.3)

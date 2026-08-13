@@ -125,6 +125,12 @@ The bridge exposes a pure guest-side generator SDK. SDK calls yield serialized
 requests; the parent invokes the gateway and resumes the same generator with a
 serialized response. No host callback or object is installed in QuickJS.
 
+Phase 8 exposes this boundary to Pi as exactly one sequential `execute_code`
+tool. The mandatory generator guide is derived from immutable metadata on the
+configured gateway plus frozen, validated code-mode defaults. Invalid custom
+limits fail before a child process is created. Direct tool mode remains a
+separate projection over the same gateway; neither projection owns authority.
+
 ## Residual risk and required follow-up
 
 - A WebAssembly interpreter still shares the child process's native memory and

@@ -11,6 +11,12 @@ import type {
 import type { CapabilityGatewayService } from "@bound/capability"
 
 import { projectLedgerTools } from "./tools.ts"
+import {
+  formatCodeModeGuide,
+  projectCodeModeTools,
+} from "./code-tools.ts"
+
+export type LedgerAgentMode = "tool" | "code"
 
 export type LedgerAgentEvent =
   | { readonly type: "text_delta"; readonly delta: string }
@@ -31,6 +37,7 @@ export interface LedgerAgentOptions {
   readonly gateway: CapabilityGatewayService
   readonly model: Model<any>
   readonly streamFn: StreamFn
+  readonly mode?: LedgerAgentMode
   readonly systemPrompt?: string
   readonly onEvent?: (event: LedgerAgentEvent) => void | Promise<void>
 }
@@ -85,13 +92,24 @@ export const runLedgerAgentPrompt = async (
   options: LedgerAgentOptions,
 ): Promise<LedgerAgentRunResult> => {
   const events: Array<LedgerAgentEvent> = []
+  const mode = options.mode ?? "tool"
+  const baseSystemPrompt =
+    options.systemPrompt ??
+    (mode === "code"
+      ? "You are the Bound Ledger assistant. Use execute_code for ledger facts."
+      : "You are the Bound Ledger assistant. Use ledger tools for ledger facts.")
+  const systemPrompt =
+    mode === "code"
+      ? `${baseSystemPrompt}\n\nCode-mode guide: ${formatCodeModeGuide(options.gateway)}`
+      : baseSystemPrompt
   const agent = new Agent({
     initialState: {
-      systemPrompt:
-        options.systemPrompt ??
-        "You are the Bound Ledger assistant. Use ledger tools for ledger facts.",
+      systemPrompt,
       model: options.model,
-      tools: [...projectLedgerTools(options.gateway)],
+      tools:
+        mode === "code"
+          ? [...projectCodeModeTools(options.gateway)]
+          : [...projectLedgerTools(options.gateway)],
     },
     streamFn: options.streamFn,
     toolExecution: "sequential",
