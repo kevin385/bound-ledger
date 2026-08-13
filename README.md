@@ -4,14 +4,16 @@ Bound Ledger explores a simple idea: application-owned operations should
 remain the authority whether an AI invokes them as tools or through generated
 code.
 
-The repository is deliberately a small Effect v4 monorepo with a deterministic
-Pi Agent Core path. A Phase 6 experiment selected a subprocess-isolated
-QuickJS-WASM boundary for the next local proof; it is not a production sandbox
-or framework and the repository does not contain database or UI code.
+The repository is deliberately a small Effect v4 monorepo with deterministic
+Pi Agent Core and controlled code-mode paths. Generated code runs in a fresh
+QuickJS-WASM runtime inside a disposable subprocess and can reach ledger
+behavior only through the same capability gateway as tool mode. This remains a
+local research proof, not a production sandbox or framework.
 
 ```text
 apps/cli          runnable composition root
 packages/capability validated and authorized invocation boundary
+packages/code-mode bounded guest SDK and subprocess execution bridge
 packages/ledger   expense-ledger behavior and tests
 packages/pi-adapter Pi tool projection and event translation
 experiments/sandbox executable runtime comparison and threat probes
@@ -30,9 +32,11 @@ pnpm start
 pnpm check
 ```
 
-`pnpm start` runs a deterministic two-turn Pi conversation that lists July 2026
-transactions and prints its agent events and structured capability attempt. It
-uses Pi's in-memory faux provider and requires no API key.
+`pnpm start` runs a deterministic two-turn Pi conversation and a deterministic
+generated program that both list July 2026 transactions through the same
+gateway. It prints the agent events, code-mode result, call counts, and
+structured capability attempts. Pi uses its in-memory faux provider; neither
+path requires an API key.
 `pnpm check` typechecks and tests every workspace.
 `pnpm test:sandbox` runs the pinned QuickJS-WASM and `isolated-vm` escape and
 resource-limit comparison in disposable child processes.

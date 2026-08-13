@@ -6,8 +6,8 @@ This threat model covers the proposed execution of model-generated JavaScript
 inside Bound Ledger. It is evidence for an experimental local proof, not a
 claim that the repository has a production security boundary.
 
-Phase 6 evaluates runtimes only. It does not expose application capabilities to
-generated code and it does not create `packages/code-mode`.
+Phase 6 evaluated runtimes. Phase 7 adds the controlled local proof in
+`packages/code-mode`; it remains unsuitable for real untrusted workloads.
 
 ## Assets and trust boundaries
 
@@ -77,8 +77,10 @@ Every run must enforce:
 - total capability-call, mutation-call, and recursion budgets;
 - abort propagation to the runtime and any pending gateway call.
 
-The last three capability controls cannot be demonstrated until Phase 7 adds a
-generated proxy. They are mandatory acceptance tests for that phase.
+The Phase 7 executor enforces capability-call, mutation-call, and in-flight
+request-depth budgets in the parent. Its abort signal terminates the child and
+interrupts a pending gateway Effect. The gateway still decodes and authorizes
+every individual request.
 
 ## Executable evidence
 
@@ -112,17 +114,28 @@ pnpm test:sandbox
 These probes demonstrate current behavior of pinned dependencies. They do not
 prove the absence of engine or host vulnerabilities.
 
+[`packages/code-mode/src/code-mode.test.ts`](../packages/code-mode/src/code-mode.test.ts)
+adds executable bridge evidence. It verifies tool/code result and attempt
+equivalence, fresh-runtime state, host-global isolation, call and mutation
+budgets, request-depth enforcement, dynamic re-authorization, abort during a
+pending gateway call, inert request-shaped output, inaccessible resource
+refusal, serializable output, and program/result/deadline limits.
+
+The bridge exposes a pure guest-side generator SDK. SDK calls yield serialized
+requests; the parent invokes the gateway and resumes the same generator with a
+serialized response. No host callback or object is installed in QuickJS.
+
 ## Residual risk and required follow-up
 
 - A WebAssembly interpreter still shares the child process's native memory and
   host runtime. The process boundary must remain disposable and independently
   killable.
-- QuickJS memory interruption is not an operating-system RSS limit. Phase 7
-  must measure and bound child-process overhead, and deployment must add an OS
-  or platform memory limit where available.
-- A synchronous program cannot safely wait on a parent capability call without
-  a carefully bounded bridge. The bridge must never expose a host callback or
-  object directly.
+- QuickJS memory interruption is not an operating-system RSS limit. The package
+  suite measures termination behavior, but deployment must add an OS or
+  platform memory limit where available.
+- Generated programs use the controlled generator syntax (`yield*`) rather than
+  ordinary async JavaScript. A future agent projection must teach and validate
+  this syntax without silently broadening the runtime API.
 - Cancellation races can allow a parent request to finish after the program is
   gone. Mutations require request identity, abort handling, and authorization at
   execution time.

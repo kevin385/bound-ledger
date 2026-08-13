@@ -68,8 +68,9 @@ QuickJS-WASM is intrinsically secure.
 - The interpreter heap limit is not a strict child-process RSS limit.
 - Allocation failure took materially longer than the nominal interrupt deadline
   in the current probe; the parent hard timeout remains mandatory.
-- The current spike has no application proxy, asynchronous gateway protocol,
-  abort race, call budget, mutation budget, or recursion-budget test.
+- At decision time, the Phase 6 spike had no application proxy, asynchronous
+  gateway protocol, abort race, call budget, mutation budget, or
+  recursion-budget test. Phase 7 subsequently added this evidence.
 - Engine and WebAssembly vulnerabilities remain possible.
 - The isolation tests cover named attack classes, not every JavaScript semantic
   or side channel.
@@ -103,6 +104,15 @@ considered successful.
 
 The comparison dependencies and tests remain at the repository root because
 they are phase-gate evidence, not reusable application behavior.
+
+## Phase 7 implementation note
+
+Phase 7 implemented the bridge without installing host callbacks in QuickJS.
+A pure guest-side generator SDK yields serialized capability requests; the
+parent invokes the gateway and resumes the same generator with serialized
+data. One fresh runtime and disposable child process are used per program.
+Executable package tests cover the bridge, budgets, cancellation, authority
+changes, and retained-state boundary.
 
 ## References
 
