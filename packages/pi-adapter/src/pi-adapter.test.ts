@@ -5,8 +5,14 @@ import { describe, expect } from "vitest"
 import {
   CapabilityGateway,
   makeCapabilityGatewayLayer,
+  type CapabilityAttempt,
   type CapabilityGatewayService,
 } from "@bound/capability"
+import {
+  CODE_MODE_DEFAULT_LIMITS,
+  LIST_JULY_TRANSACTIONS_PROGRAM,
+  type CodeModeRunResult,
+} from "@bound/code-mode"
 import {
   createModels,
   fauxAssistantMessage,
@@ -25,6 +31,10 @@ import {
 } from "@bound/ledger"
 
 import { runLedgerAgentPrompt } from "./agent.ts"
+import {
+  inspectCodeMode,
+  projectCodeModeTools,
+} from "./code-tools.ts"
 import { projectLedgerTools } from "./tools.ts"
 
 const primarySession: Session = {
@@ -57,6 +67,25 @@ const withSampleGateway = <A, E>(
       Effect.provide(gatewayLayer),
     )
   })
+
+const canonicalListAttempt: CapabilityAttempt = {
+  name: "transactions.list",
+  actorId: "actor_primary_owner",
+  kind: "read",
+  decodedInput: { month: "2026-07" },
+  authorization: "authorized",
+  outcome: "succeeded",
+  stage: "complete",
+}
+
+const finalJulyResponse = (transactions: ReadonlyArray<{ readonly id: string }>) =>
+  fauxAssistantMessage(
+    fauxText(
+      `Found ${transactions.length} July transactions: ${transactions
+        .map((transaction) => transaction.id)
+        .join(", ")}.`,
+    ),
+  )
 
 describe("Pi adapter", () => {
   it.effect("projects all ledger capabilities as sequential Pi tools", () =>
@@ -202,6 +231,181 @@ describe("Pi adapter", () => {
               .join(""),
           ).toBe(result.text)
         }),
+      ),
+  )
+
+  it.effect(
+    "projects one bounded code tool with compact authoritative discovery",
+    () =>
+      withSampleGateway((gateway) =>
+        Effect.sync(() => {
+          const tools = projectCodeModeTools(gateway)
+          const guide = inspectCodeMode(gateway)
+
+          expect(tools).toHaveLength(1)
+          expect(tools[0]?.name).toBe("execute_code")
+          expect(tools[0]?.executionMode).toBe("sequential")
+          expect(guide.capabilities).toEqual([
+            {
+              name: "transactions.list",
+              description: "List readable transactions for a calendar month",
+              kind: "read",
+              call: 'yield* app.transactions.list({ month: "YYYY-MM" })',
+            },
+            {
+              name: "transactions.get",
+              description: "Get one readable transaction by ID",
+              kind: "read",
+              call: "yield* app.transactions.get({ transactionId })",
+            },
+            {
+              name: "transactions.update_category",
+              description: "Update the category of one mutable transaction",
+              kind: "mutation",
+              call:
+                "yield* app.transactions.updateCategory({ transactionId, category })",
+            },
+          ])
+          expect(guide.limits).toBe(CODE_MODE_DEFAULT_LIMITS)
+          expect(Object.isFrozen(guide)).toBe(true)
+          expect(Object.isFrozen(guide.capabilities)).toBe(true)
+        }),
+      ),
+  )
+
+  it.effect(
+    "produces equivalent tool and code results through one Pi loop per mode",
+    () =>
+      withSampleGateway((toolGateway) =>
+        withSampleGateway((codeGateway) =>
+          Effect.gen(function* () {
+            const toolFaux = fauxProvider({
+              provider: "bound-ledger-paired-tool-test",
+              tokenSize: { min: 12, max: 12 },
+            })
+            const codeFaux = fauxProvider({
+              provider: "bound-ledger-paired-code-test",
+              tokenSize: { min: 12, max: 12 },
+            })
+            const toolModels = createModels()
+            const codeModels = createModels()
+            let toolOutput: unknown
+            let codeOutput: CodeModeRunResult | undefined
+            let codeSystemPrompt = ""
+            let codeToolNames: ReadonlyArray<string> = []
+
+            toolModels.setProvider(toolFaux.provider)
+            codeModels.setProvider(codeFaux.provider)
+            toolFaux.setResponses([
+              fauxAssistantMessage(
+                fauxToolCall(
+                  "transactions_list",
+                  { month: "2026-07" },
+                  { id: "call_tool_list_july" },
+                ),
+                { stopReason: "toolUse" },
+              ),
+              (context) => {
+                const result = context.messages.findLast(
+                  (message) => message.role === "toolResult",
+                )
+                const text =
+                  result?.role === "toolResult"
+                    ? result.content.find((item) => item.type === "text")?.text
+                    : undefined
+                toolOutput = JSON.parse(text ?? "null")
+                return finalJulyResponse(
+                  toolOutput as ReadonlyArray<{ readonly id: string }>,
+                )
+              },
+            ])
+            codeFaux.setResponses([
+              (context) => {
+                codeSystemPrompt = context.systemPrompt ?? ""
+                codeToolNames = context.tools?.map((tool) => tool.name) ?? []
+                return fauxAssistantMessage(
+                  fauxToolCall(
+                    "execute_code",
+                    { program: LIST_JULY_TRANSACTIONS_PROGRAM },
+                    { id: "call_code_list_july" },
+                  ),
+                  { stopReason: "toolUse" },
+                )
+              },
+              (context) => {
+                const result = context.messages.findLast(
+                  (message) => message.role === "toolResult",
+                )
+                const text =
+                  result?.role === "toolResult"
+                    ? result.content.find((item) => item.type === "text")?.text
+                    : undefined
+                codeOutput = JSON.parse(text ?? "null") as CodeModeRunResult
+                return finalJulyResponse(
+                  codeOutput.output as ReadonlyArray<{ readonly id: string }>,
+                )
+              },
+            ])
+
+            const toolRun = yield* Effect.promise(() =>
+              runLedgerAgentPrompt("List my July 2026 transactions.", {
+                gateway: toolGateway,
+                model: toolFaux.getModel(),
+                streamFn: toolModels.streamSimple.bind(toolModels),
+              }),
+            )
+            const codeRun = yield* Effect.promise(() =>
+              runLedgerAgentPrompt("List my July 2026 transactions.", {
+                gateway: codeGateway,
+                mode: "code",
+                systemPrompt: "Custom code assistant.",
+                model: codeFaux.getModel(),
+                streamFn: codeModels.streamSimple.bind(codeModels),
+              }),
+            )
+            const toolAttempts = yield* toolGateway.attempts
+            const codeAttempts = yield* codeGateway.attempts
+
+            expect(codeRun.text).toBe(toolRun.text)
+            expect(codeOutput?.output).toEqual(toolOutput)
+            expect(codeOutput).toMatchObject({
+              capabilityCalls: 1,
+              mutationCalls: 0,
+            })
+            expect(toolAttempts).toEqual([canonicalListAttempt])
+            expect(codeAttempts).toEqual(toolAttempts)
+            expect(toolFaux.state.callCount).toBe(2)
+            expect(codeFaux.state.callCount).toBe(2)
+            expect(toolFaux.getPendingResponseCount()).toBe(0)
+            expect(codeFaux.getPendingResponseCount()).toBe(0)
+            expect(codeToolNames).toEqual(["execute_code"])
+            expect(codeSystemPrompt).toContain("Custom code assistant.")
+            expect(codeSystemPrompt).toContain("yield* app.transactions.list")
+            expect(codeSystemPrompt).toContain('"capabilityCalls":8')
+            expect(
+              codeRun.events.filter((event) => event.type !== "text_delta"),
+            ).toEqual([
+              {
+                type: "tool_started",
+                toolCallId: "call_code_list_july",
+                toolName: "execute_code",
+                args: { program: LIST_JULY_TRANSACTIONS_PROGRAM },
+              },
+              {
+                type: "tool_finished",
+                toolCallId: "call_code_list_july",
+                toolName: "execute_code",
+                isError: false,
+              },
+            ])
+            expect(
+              codeRun.events
+                .filter((event) => event.type === "text_delta")
+                .map((event) => event.delta)
+                .join(""),
+            ).toBe(codeRun.text)
+          }),
+        ),
       ),
   )
 })

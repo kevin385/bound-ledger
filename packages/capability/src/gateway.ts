@@ -13,6 +13,7 @@ import {
   type CapabilityAuthorization,
   type CapabilityDefinition,
   type CapabilityInvocationError,
+  type CapabilityMetadata,
   DuplicateCapabilityError,
   UnknownCapabilityError,
 } from "./capability.ts"
@@ -38,6 +39,7 @@ type Invoke = {
 }
 
 export interface CapabilityGatewayService {
+  readonly capabilities: ReadonlyArray<CapabilityMetadata>
   readonly invoke: Invoke
   readonly attempts: Effect.Effect<ReadonlyArray<CapabilityAttempt>>
 }
@@ -70,6 +72,16 @@ export const makeCapabilityGatewayLayer = (
 
         registry.set(definition.name, definition)
       }
+
+      const capabilities: ReadonlyArray<CapabilityMetadata> = Object.freeze(
+        [...registry.values()].map((definition) =>
+          Object.freeze<CapabilityMetadata>({
+            name: definition.name,
+            description: definition.description,
+            kind: definition.kind,
+          }),
+        ),
+      )
 
       const attemptLog = yield* Ref.make<ReadonlyArray<CapabilityAttempt>>([])
       const record = (attempt: CapabilityAttempt) =>
@@ -175,6 +187,7 @@ export const makeCapabilityGatewayLayer = (
         })
 
       return {
+        capabilities,
         invoke: invokeUnknown as Invoke,
         attempts: Ref.get(attemptLog).pipe(
           Effect.map((attempts) => [...attempts]),

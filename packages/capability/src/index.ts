@@ -5,6 +5,7 @@ export {
   type CapabilityDefinition,
   type CapabilityInvocationError,
   type CapabilityKind,
+  type CapabilityMetadata,
   type CapabilityRuntime,
   type CapabilitySpec,
   defineCapability,

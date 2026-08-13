@@ -8,6 +8,12 @@ import type {
 
 export type CapabilityKind = "read" | "mutation"
 
+export interface CapabilityMetadata {
+  readonly name: string
+  readonly description: string
+  readonly kind: CapabilityKind
+}
+
 export type CapabilityAttemptStage =
   | "lookup"
   | "input"

@@ -32,11 +32,12 @@ pnpm start
 pnpm check
 ```
 
-`pnpm start` runs a deterministic two-turn Pi conversation and a deterministic
-generated program that both list July 2026 transactions through the same
-gateway. It prints the agent events, code-mode result, call counts, and
-structured capability attempts. Pi uses its in-memory faux provider; neither
-path requires an API key.
+`pnpm start` runs paired deterministic Pi conversations: tool mode selects the
+list tool, while code mode selects `execute_code` with a generated program.
+Both list July 2026 transactions through the same gateway. The CLI prints both
+agent event streams, the code-mode result, call counts, and structured
+capability attempts. Pi uses its in-memory faux provider; neither path requires
+an API key.
 `pnpm check` typechecks and tests every workspace.
 `pnpm test:sandbox` runs the pinned QuickJS-WASM and `isolated-vm` escape and
 resource-limit comparison in disposable child processes.

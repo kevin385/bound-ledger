@@ -10,9 +10,28 @@ export type CodeModeLimit =
   | "stack"
   | "wall_clock"
 
+export type CodeModeLimitSetting =
+  | "capabilityCalls"
+  | "memoryBytes"
+  | "mutationCalls"
+  | "programBytes"
+  | "recursionDepth"
+  | "resultBytes"
+  | "stackBytes"
+  | "runtimeMilliseconds"
+  | "wallClockMilliseconds"
+
 export class CodeModeAbortedError extends Data.TaggedError(
   "CodeModeAbortedError",
 )<{ readonly message: string }> {}
+
+export class CodeModeConfigurationError extends Data.TaggedError(
+  "CodeModeConfigurationError",
+)<{
+  readonly setting: CodeModeLimitSetting
+  readonly value: unknown
+  readonly message: string
+}> {}
 
 export class CodeModeLimitError extends Data.TaggedError(
   "CodeModeLimitError",
@@ -32,6 +51,7 @@ export class CodeModeProtocolError extends Data.TaggedError(
 
 export type CodeModeError =
   | CodeModeAbortedError
+  | CodeModeConfigurationError
   | CodeModeLimitError
   | CodeModeProgramError
   | CodeModeProtocolError
