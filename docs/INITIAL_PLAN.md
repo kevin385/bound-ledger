@@ -9,24 +9,24 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Initial implementation sequence complete — define the next
-phase here before adding architecture or product scope.
+**Current phase:** Phase 10 — General ledger kernel.
 
 ## Purpose
 
-Build the smallest application that can eventually test whether tool mode and
-code mode share one application-owned execution boundary.
+Build the smallest application that can test whether tool mode and code mode
+share one application-owned execution boundary over deterministic financial
+behavior.
 
-The first useful vertical slice is intentionally local and deterministic. It
-must establish trustworthy domain behavior before an agent, cloud runtime,
-database, UI, or sandbox is introduced.
+Phases 1–9 intentionally used a narrow transaction slice to establish the
+capability, agent, sandbox, and evaluation boundaries. Phase 10 corrects the
+domain foundation before more code-mode, ingestion, persistence, or UI work.
 
 ## Project naming
 
 - Product and repository display name: **Bound Ledger**.
 - Repository slug: `bound-ledger`.
 - Package namespace: `@bound/*`.
-- Reference domain: an expense ledger.
+- Reference domain: a personal financial ledger.
 
 The package namespace remains `@bound/*`; renaming the repository does not
 require renaming existing package imports.
@@ -73,7 +73,10 @@ Do not introduce these during the current phase:
 - web, API, cloud, or deployment infrastructure;
 - a large authoring SDK;
 - a generic testing package;
-- production-security claims for generated-code execution.
+- production-security claims for generated-code execution;
+- source-specific ingestion adapters;
+- multi-currency, foreign exchange, security lots, or market valuation;
+- an interest-policy engine.
 
 Each may appear only after a Bound Ledger requirement, test, and phase gate
 justify it.
@@ -87,7 +90,7 @@ bound-ledger/
   packages/
     capability/           validated and authorized invocation boundary
     code-mode/            bounded guest SDK and subprocess execution bridge
-    ledger/               transaction model and ledger behavior
+    ledger/               financial domain and legacy transaction proof
     pi-adapter/            Pi tool projection and event translation
   docs/
     adr/0001-experimental-code-sandbox.md
@@ -412,6 +415,203 @@ summary records one deterministic sample, separates outer model/tool counts
 from inner capability calls, treats timing as diagnostic, and makes no broader
 claim from the result.
 
+## Phase 10 — General ledger kernel
+
+The Phase 1–9 `Transaction` model was deliberately sufficient for proving the
+execution boundary, but it is not the product's financial foundation. Its
+stored `month`, single-account amount, merchant/category requirements, and
+in-place category update cannot represent a general append-only ledger.
+
+Build the new foundation inside `@bound/ledger` before adding more capabilities,
+code-mode behavior, ingestion, persistence, or UI.
+
+### Local requirement
+
+Implement one in-memory, single-currency personal financial ledger that:
+
+- records ambiguous interpretations as proposals that do not affect balances;
+- atomically appends immutable posted events with balanced postings;
+- represents deposits, contributions, transfers, withdrawals, expenses,
+  refunds, and adjustments through the same event/posting contract;
+- derives balances, trial balance, expenses, and date-range activity from
+  postings;
+- corrects economic facts with linked reversal and replacement events;
+- preserves source and audit provenance without trusting model-supplied actor
+  identity or recorded time.
+
+### Domain contract
+
+Keep one concept owner inside `@bound/ledger`:
+
+- `Ledger` identifies the financial and authorization context. New domain APIs
+  use ledger terminology; any temporary mapping from the historical workspace
+  name belongs at a compatibility boundary.
+- `Account` has an ID, ledger ID, display name, currency, accounting class, and
+  product subtype. Accounting classes are `asset`, `liability`, `equity`,
+  `income`, and `expense`. Initial subtypes may include `cash`, `bank`,
+  `credit_card`, `loan`, `receivable`, `investment`, `expense_category`, and
+  `income_source`.
+- `EventProposal` contains a proposed event kind, effective time, candidate
+  postings, provenance, and explicit assumptions. An assumption records the
+  affected field, proposed value, confidence, rationale, and optional source
+  evidence reference. Proposals never participate in projections.
+- `FinancialEvent` is an immutable posted event with an application-owned ID,
+  ledger ID, kind, effective time, trusted recorded time, trusted actor ID,
+  idempotency key, provenance, balanced postings, and optional typed lineage.
+- `Posting` contains an account ID, currency, signed integer `amountMinor`, and
+  optional description/classification metadata. Positive is debit and negative
+  is credit. Asset and expense balances normally increase with debits;
+  liability, equity, and income balances normally increase with credits.
+- `Provenance` identifies source kind, stable source reference, source digest,
+  correlation/causation IDs, and optional evidence references. Do not require
+  raw source contents or expose them through errors.
+
+Event kinds are descriptive, not separate balance implementations. Postings
+remain authoritative. For example:
+
+- a checking-to-cash withdrawal debits cash and credits checking, so it is not
+  an expense;
+- a checking expense debits an expense account and credits checking;
+- a credit-card expense debits an expense account and credits a liability;
+- a transfer balances two financial accounts and nets to zero;
+- a refund or correction uses explicit contra/reversal postings rather than a
+  negative convention hidden in one transaction amount.
+
+### Posting invariants
+
+- Amounts are safe integer minor units; no floats, `NaN`, infinities, or unsafe
+  integers cross the boundary.
+- Phase 10 supports one configured ISO currency. Every account and posting in
+  the ledger uses it.
+- A posted event has at least two postings and the signed sum is exactly zero.
+- Every posting references an existing account in the same ledger.
+- Event append, authorization, validation, and idempotency checks are atomic.
+  Failure appends nothing.
+- `(ledgerId, idempotencyKey)` is unique. Repeating the same source cannot
+  duplicate balances.
+- `effectiveAt` is a decoded instant stored in canonical UTC. Date ranges are
+  half-open `[from, to)`; month and other reporting periods are derived.
+- `recordedAt`, actor identity, active ledger, and account permissions come from
+  trusted runtime context, not capability or model input.
+- A reversal contains the exact negation of the original postings and a
+  `reverses` link. A corrected replacement is independently balanced and links
+  to the reversed event.
+- A posted event can be reversed at most once, and lineage targets must exist in
+  the same ledger.
+- `balancesAt` returns the signed debit-positive balance per account; liability,
+  equity, and income display amounts are later normalized projections.
+- Expense totals are the net debit activity of expense-class accounts, not
+  every event that reduces a cash account.
+- Balances and reports are rebuildable from the append-only posted-event
+  sequence. No projection is a mutation source.
+
+### Smallest service surface
+
+The in-memory domain service may expose only the operations needed to prove the
+kernel:
+
+```text
+appendProposal
+queryProposals
+postEvent
+getEvent
+queryEvents
+reverseEvent
+balancesAt
+activityForRange
+trialBalanceAt
+```
+
+These are domain operations, not yet model-facing capabilities. Do not build a
+generic event-sourcing framework or a second service/package for them.
+
+### Expected files
+
+```text
+packages/ledger/src/
+  money.ts                    fixed-precision money and currency schemas
+  account.ts                  ledger account classes and subtypes
+  financial-event.ts          proposal, event, posting, lineage, provenance
+  financial-fixtures.ts       unknown deterministic kernel fixtures
+  financial-fixtures.test.ts  fixture boundary tests
+  ledger-kernel.ts            append-only in-memory behavior and projections
+  ledger-kernel.test.ts       invariant and projection tests
+  index.ts                    explicit public exports
+```
+
+File names may be refined, but ownership must remain in `@bound/ledger` and the
+package must not import capability, agent, sandbox, or application code.
+
+### Required tests
+
+- Valid account, proposal, event, posting, and provenance fixtures decode.
+- Fractional, unsafe, and wrong-currency amounts fail before behavior.
+- An unbalanced event, one-posting event, unknown account, cross-ledger posting,
+  and duplicate idempotency key each fail with a typed error and append nothing.
+- A deposit/contribution produces the expected asset and income/equity balance.
+- A checking-to-cash withdrawal changes both asset accounts and produces no
+  expense.
+- A checking expense reduces the asset balance and increases expenses.
+- A credit-card expense increases a liability and expenses without changing
+  cash.
+- A transfer changes two account balances and nets to zero.
+- A refund produces the intended contra effect.
+- A proposal with assumptions is queryable but never affects balances.
+- Balance, trial-balance, expense, and half-open date-range activity projections
+  are derived correctly from effective timestamps.
+- Reversal exactly negates the original event, preserves both records, carries
+  lineage/provenance, cannot be duplicated, and can be followed by a balanced
+  replacement.
+- Reads and appends against an inaccessible ledger or account fail without
+  state change.
+- Replaying the posted-event sequence rebuilds identical projections.
+
+### Compatibility rule
+
+Keep the Phase 1–9 transaction vertical slice and its paired evaluation passing
+throughout Phase 10, but treat it as a legacy compatibility slice and add no new
+behavior to it. The general kernel becomes the new domain foundation. A later
+documented phase must migrate the capability catalog and paired evaluation to
+`accounts.*`, `events.*`, and `reports.*`, redefine transaction-shaped views as
+derived projections where useful, and only then delete the legacy `Transaction`
+schema or `transactions.*` capabilities.
+
+### Non-goals
+
+- No generic capability migration or additional model-facing tool.
+- No changes to Pi Agent Core, tool/code projections, or the sandbox.
+- No Notes, CSV, manual-entry, bank-export, or bank-connection adapter.
+- No database, API, web UI, deployment, or new workspace package.
+- No multi-currency, foreign exchange, market prices, investment lots, gains,
+  tax behavior, payment initiation, or financial advice.
+- No interest policy, compounding, day-count, repayment, or accrual engine.
+- No budgets, merchant rules, recurring detection, or categorization automation.
+- No claim that the kernel is production accounting or banking software.
+
+Interest is intentionally deferred: its effective-dated rates, rounding,
+compounding, schedules, and day-count rules require the posting kernel to be
+stable first. When earned, an interest service will calculate deterministically
+and append an ordinary interest-accrual event; the model will not supply the
+authoritative amount.
+
+### Verification
+
+```sh
+pnpm check
+pnpm start
+pnpm eval:july-list
+```
+
+The existing CLI and paired evaluation remain compatibility evidence. New
+kernel behavior is proved directly through deterministic domain tests without
+an API key.
+
+**Exit condition:** the in-memory kernel atomically appends the required
+representative events, rejects every invalid append without state change,
+derives correct balances/trial balance/expenses/date-range activity, reverses
+and replaces an event without rewriting history, preserves complete provenance,
+and keeps every pre-existing check passing.
+
 ## Packages that must earn their existence
 
 | Package | Add when |
@@ -421,13 +621,14 @@ claim from the result.
 | `@bound/trace` | A second execution surface needs the same trace vocabulary. |
 | `@bound/code-mode` | The sandbox ADR passes its decision gate. |
 | `@bound/testing` | Two packages genuinely share fixtures or test runtime construction. |
+| Policy package | At least two consumers need the same effective-dated policy behavior after the posting kernel is stable. |
 | Database package | In-memory behavior is stable and persistence is the next demonstrated requirement. |
 | Web application | The CLI demonstrates the full three-capability agent path. |
 
 ## Immediate next task
 
-The initial nine-phase sequence is complete. Before implementation resumes,
-add a reviewed next phase to this document with its local requirement, package
-ownership, tests, non-goals, and exit condition. The first paired evaluation is
-only one deterministic retrieval sample and does not justify a general harness,
-UI, persistence, live-model path, or broader code-mode claim.
+Implement Phase 10 only. Establish the single-currency append-only general
+ledger kernel and its deterministic tests inside `@bound/ledger`. Preserve the
+legacy transaction proof as compatibility evidence, and do not begin capability
+migration, interest policies, ingestion, persistence, UI, or further code-mode
+work until the Phase 10 exit condition passes and the next phase is documented.

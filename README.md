@@ -14,7 +14,7 @@ local research proof, not a production sandbox or framework.
 apps/cli          runnable composition root
 packages/capability validated and authorized invocation boundary
 packages/code-mode bounded guest SDK and subprocess execution bridge
-packages/ledger   expense-ledger behavior and tests
+packages/ledger   ledger domain and legacy transaction proof
 packages/pi-adapter Pi tool projection and event translation
 experiments/sandbox executable runtime comparison and threat probes
 evals/results      checked-in paired evaluation summary
