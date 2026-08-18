@@ -27,7 +27,9 @@ The reference application exposes its own typed business capabilities through tw
 1. **Tool mode:** the model sees and invokes individual tools.
 2. **Code mode:** the model writes a small JavaScript program against a generated, typed application SDK.
 
-Both modes must cross the same capability gateway and therefore share validation, trusted context, authorization, domain behavior, and execution evidence.
+Both modes must cross the same capability gateway and therefore share
+validation, trusted context, authorization, append-only ledger behavior,
+deterministic projections, and execution evidence.
 
 The project tests this claim rather than assuming it:
 
@@ -52,85 +54,154 @@ The finished repository should demonstrate:
 
 The concise portfolio description is:
 
-> I built Bound Ledger, a controlled code-mode reference application where an AI can program against the application's typed SDK, but every operation still passes through the application's real authorization and execution boundary.
+> I built Bound Ledger, a controlled code-mode personal financial ledger where
+> an AI can interpret inputs and program against a typed SDK, while every posted
+> event remains balanced, append-only, authorized, and calculated by
+> deterministic application code.
 
 Do not position the initial release as a production-ready general agent framework.
 
-## 3. Reference application: Expense Ledger
+## 3. Reference application: Personal Financial Ledger
 
-Build a small, polished expense tracker. It must work coherently without the agent so the AI operates a real application rather than a synthetic tool benchmark.
+Build a small, polished personal financial ledger. It must work coherently
+without the agent so the AI operates a real financial system rather than a
+synthetic tool benchmark or an expense tracker with ledger terminology.
 
-The tracker is the reference application, not the open-source product thesis. Its purpose is to make controlled agent behavior concrete: the data is sensitive, bulk changes are useful, and approvals and audit evidence matter naturally.
+Notes, CSV rows, manual forms, bank exports, and AI conversations are input
+sources. They may propose financial events, but they are not separate sources
+of financial truth. Only validated, posted events affect balances.
+
+### Input and posting flow
+
+```text
+source record
+    ↓
+event proposal + explicit assumptions
+    ↓
+validation, authorization, and confirmation
+    ↓
+immutable financial event + balanced postings
+    ↓
+balances, activity, expenses, owed amounts, and other projections
+    ↓
+human and AI interfaces
+```
+
+Raw source evidence and interpretation remain distinguishable from posted
+financial facts. Ambiguous proposals never affect balances until the missing
+economic facts are resolved or explicitly confirmed.
+
+### Central model
+
+- **Ledger** — one financial context or account group and its authorization
+  boundary.
+- **Account** — an account with an accounting class (`asset`, `liability`,
+  `equity`, `income`, or `expense`) and a product subtype such as cash, bank,
+  credit card, loan, receivable, investment, expense category, or income source.
+- **Event proposal** — an interpreted but unposted candidate with assumptions,
+  confidence, rationale, and source evidence.
+- **Financial event** — an immutable posted fact such as a deposit, withdrawal,
+  expense, transfer, refund, contribution, interest accrual, or adjustment.
+- **Posting** — one signed, fixed-precision effect on one account. Every posted
+  event balances across its postings, independently per currency.
+- **Policy** — an effective-dated deterministic rule such as an interest rate,
+  compounding schedule, date basis, rounding rule, or repayment rule.
+- **Projection** — a derived balance, activity view, expense summary, owed
+  amount, or report. Projections are never an independent mutation surface.
+
+The initial kernel is single-currency and stores amounts in integer minor
+units. Reporting periods are derived from an event's effective timestamp;
+`month` is not a domain field. Transfers net to zero across accounts. An expense
+may reduce an asset or increase a liability, while a cash withdrawal may be a
+transfer rather than an expense.
+
+Financial corrections append a linked reversal and, when needed, a replacement
+event. Non-financial classification corrections append a typed superseding
+assertion. Neither silently rewrites history.
+
+Every proposal and posted event carries audit provenance: actor, source kind,
+source reference, recorded time, effective time, correlation/causation links,
+and an idempotency key. Raw source contents are retained only where explicitly
+required and must not leak through errors or traces.
 
 ### Human-facing behavior
 
-- View monthly spending, category totals, and budget progress.
-- Browse, filter, and search transactions.
-- Inspect a transaction and its change history.
-- Correct categories and merchant names.
-- Review recurring expenses and subscriptions.
-- Create merchant categorization rules.
-- Confirm or reject agent-proposed bulk changes.
-- View agent activity and resulting changes.
-- Import a deterministic sample CSV or reset to fixtures.
+- View account balances and activity over a date range.
+- Inspect an event, its postings, source provenance, assumptions, and history.
+- Record deposits, withdrawals, expenses, transfers, refunds, and
+  contributions.
+- Review proposals before they become posted financial events.
+- Reverse or correct events without erasing prior history.
+- Distinguish expenses from transfers and liability changes.
+- Preview deterministic reports and, later, policy-driven interest accruals.
+- Confirm or reject agent-proposed postings and corrections.
+- View agent activity and the exact financial events it caused.
+- Import deterministic fixtures and, only after the kernel is stable, add
+  source-specific ingestion adapters.
 
 ### Explicit MVP boundaries
 
-Do not add bank connections, payment initiation, receipt OCR, investment tracking, tax advice, or financial recommendations. The first release uses deterministic sample data and optional local CSV import. It never moves money.
+Do not add live bank connections, payment initiation, receipt OCR, tax advice,
+financial recommendations, foreign exchange, security lots, market-price
+valuation, or automated trading. The kernel begins in memory with one currency
+and deterministic fixtures. It records financial facts but never moves money.
 
 ### Seed data
 
 Create deterministic fixtures with:
 
-- 1 primary household workspace and 1 inaccessible workspace for authorization tests;
-- 3 accounts: checking, credit card, and cash;
-- 180–250 transactions spanning at least four months;
-- 25–35 recognizable but fictional merchants;
-- 10–12 categories and monthly budgets;
-- several recurring subscriptions;
-- merchant-name variants such as `ACME*STREAM`, `Acme Stream`, and `ACME STREAM 042`;
-- intentional categorization errors, duplicates, refunds, transfers, and unusual expenses;
-- two actors with different read and mutation permissions.
+- 1 primary personal ledger and 1 inaccessible ledger for authorization tests;
+- asset, liability, equity, income, and expense accounts;
+- checking, credit-card, cash, loan, and receivable subtypes;
+- deposits, contributions, transfers, withdrawals, expenses, refunds, and
+  adjustments spanning at least four months;
+- an expense paid from checking and an expense charged to a credit liability;
+- a bank-to-cash withdrawal that is not classified as an expense;
+- one complete reversal/replacement chain;
+- duplicate idempotency keys and an unbalanced event for rejection tests;
+- ambiguous proposals that do not affect balances;
+- two actors with different ledger and account permissions.
 
-Seed data must be reproducible from one command and contain no real personal financial information.
+Seed data must be reproducible from one command and contain no real personal
+financial information.
 
-### Initial capabilities
+### Target capabilities
 
 ```text
-transactions.list
-transactions.get
-transactions.search
-transactions.update_category
-transactions.bulk_update_categories
-transactions.update_merchant
-transactions.mark_reviewed
-transactions.split
+accounts.list
+accounts.get
 
-merchants.list
-merchants.get
-merchants.set_alias
+events.propose
+events.post
+events.get
+events.query
+events.reverse
+events.link
 
-categories.list
-budgets.list
-budgets.set
+reports.balance
+reports.activity
+reports.trial_balance
+reports.expenses
 
-rules.list
-rules.test
-rules.create
-rules.disable
-
-reports.monthly_summary
-reports.spending_by_category
-reports.recurring_expenses
+policies.list
+interest.preview
+interest.accrue
 ```
 
-Begin with 10–12 capabilities and grow toward 15–20 only when the UI or evaluation tasks need them. Do not manufacture capabilities merely to inflate the catalog.
+`events.link` accepts only declared relationship types such as `reverses`,
+`replaces`, `supersedes`, or `derived_from`; it is not an arbitrary graph
+mutation. Interest capabilities arrive only after the core posting invariants
+are stable. Begin with the smallest existing operations and grow the catalog
+only when a human workflow or evaluation task needs them.
 
 ## 4. Flagship demonstration
 
 The user asks:
 
-> Review last month's expenses. Identify subscriptions and unusual spending, fix obvious categorization errors, and propose reusable merchant rules. Show me the exact changes and ask before modifying anything.
+> Reconcile last month's activity across my checking account, credit card, and
+> loan. Show balances, expenses, transfers, refunds, ambiguous entries, and the
+> interest that would accrue under the active policy. Propose exact corrections
+> with their postings and assumptions, but do not post anything until I approve.
 
 ### Tool-mode execution
 
@@ -150,77 +221,59 @@ finish
 The generated program may resemble:
 
 ```ts
-const transactions = await app.transactions.list({
-  month: "2026-07",
-  accountIds: ["acct_checking", "acct_credit"],
+const activity = await app.reports.activity({
+  from: "2026-07-01T00:00:00Z",
+  to: "2026-08-01T00:00:00Z",
+  accountIds: ["acct_checking", "acct_credit", "acct_loan"],
 });
 
-const merchants = await app.merchants.list({});
-
-const groups = collections.groupBy(
-  transactions.items,
-  (transaction) => transaction.normalizedMerchant,
-);
-
-const merchantByName = new Map(
-  merchants.items.map((merchant) => [merchant.normalizedName, merchant]),
-);
-
-const categoryChanges = transactions.items.flatMap((transaction) => {
-  const merchant = merchantByName.get(transaction.normalizedMerchant);
-  if (
-    !merchant?.suggestedCategoryId ||
-    merchant.categoryConfidence < 0.95 ||
-    merchant.suggestedCategoryId === transaction.categoryId
-  ) {
-    return [];
-  }
-
-  return [{
-    transactionId: transaction.id,
-    fromCategoryId: transaction.categoryId,
-    toCategoryId: merchant.suggestedCategoryId,
-    reason: `Matches ${merchant.displayName}`,
-  }];
+const balances = await app.reports.balance({
+  at: "2026-08-01T00:00:00Z",
 });
 
-const recurring = Object.entries(groups)
-  .filter(([, items]) => items.length >= 3)
-  .map(([merchant, items]) => ({ merchant, occurrences: items.length }));
+const trialBalance = await app.reports.trialBalance({
+  at: "2026-08-01T00:00:00Z",
+});
 
-const average = transactions.items.reduce(
-  (sum, transaction) => sum + transaction.amount,
-  0,
-) / transactions.items.length;
+const proposals = await app.events.query({
+  status: "proposed",
+  from: "2026-07-01T00:00:00Z",
+  to: "2026-08-01T00:00:00Z",
+});
 
-const unusual = transactions.items.filter(
-  (transaction) => transaction.amount > average * 3,
+const interest = await app.interest.preview({
+  accountId: "acct_loan",
+  through: "2026-07-31T23:59:59Z",
+});
+
+const ambiguous = proposals.items.filter(
+  (proposal) => proposal.assumptions.length > 0,
 );
 
 return {
-  reviewed: transactions.items.length,
-  categoryChanges,
-  proposedRules: collections.uniqueBy(
-    categoryChanges.map((change) => ({
-      merchant: transactions.items.find(
-        (transaction) => transaction.id === change.transactionId,
-      )?.normalizedMerchant,
-      categoryId: change.toCategoryId,
-    })),
-    (rule) => `${rule.merchant}:${rule.categoryId}`,
-  ),
-  recurring,
-  unusual,
+  balances,
+  trialBalance,
+  expenses: activity.expenses,
+  transfers: activity.transfers,
+  refunds: activity.refunds,
+  ambiguous,
+  interestPreview: interest,
+  proposedCorrections: activity.correctionCandidates,
 };
 ```
 
-This first program is read-only and returns an inspectable proposal. After the user approves the exact proposal, Pi generates a continuation that invokes `transactions.bulk_update_categories` and `rules.create`. The gateway binds confirmation to the decoded mutation inputs; approval is not blanket permission for later calls.
+This first program is read-only and returns an inspectable proposal. The trial
+balance is a deterministic integrity assertion over posted events. After the
+user approves exact inputs, Pi generates a continuation that invokes
+`events.reverse`, `events.post`, or `interest.accrue`. The gateway binds
+confirmation to decoded mutation inputs; approval is not blanket permission
+for later calls.
 
 ### Demo UI
 
 ```text
 ┌───────────────────────────┬───────────────────────────┐
-│ Expense Ledger            │ Agent conversation        │
+│ Personal Financial Ledger │ Agent conversation        │
 │                           │                           │
 │ Dashboard and ledger      │ Request, progress, result │
 ├───────────────────────────┼───────────────────────────┤
@@ -272,7 +325,7 @@ Execution mode
                                 validation + trusted context
                                       + authorization
                                                 ↓
-                                         domain feature
+                                deterministic ledger kernel
                                                 ↓
                                           application DB
 ```
@@ -295,7 +348,7 @@ The generated SDK is a proxy. It does not expose feature implementations directl
 
 ### I4. Model input cannot manufacture identity
 
-Actor, workspace and account access, and confirmation permissions come from trusted session context, never tool or code arguments.
+Actor, ledger and account access, and confirmation permissions come from trusted session context, never tool or code arguments.
 
 ### I5. Validate on both sides
 
@@ -321,25 +374,39 @@ Store program text, tool calls, individual capability invocations, decisions, ou
 
 Every evaluation begins from a named deterministic fixture and records model, mode, configuration, application revision, and task version.
 
+### I11. Posted financial history is append-only
+
+No capability edits or deletes a posted event. Economic corrections append a
+linked reversal and replacement; non-economic corrections append a typed
+superseding assertion.
+
+### I12. The ledger, not the model, calculates financial truth
+
+Only deterministic domain code validates posting balance, applies policies,
+derives balances, and calculates reports. AI may interpret sources and
+orchestrate capabilities, but its narration and arithmetic are never
+authoritative financial state.
+
 ## 8. Capability authoring API
 
 Start with the smallest API that supports the reference application:
 
 ```ts
-const bulkCategorize = defineCapability({
-  name: "transactions.bulk_update_categories",
-  description: "Apply approved category changes to transactions",
+const postEvent = defineCapability({
+  name: "events.post",
+  description: "Post one approved balanced financial event",
   kind: "mutation",
   agentAccess: "confirmation_required",
-  input: BulkCategoryUpdateInput,
-  output: BulkCategoryUpdateResult,
+  input: PostEventInput,
+  output: FinancialEvent,
 
   authorize: ({ actor, input }) =>
-    actor.workspaceId === input.workspaceId &&
-    input.accountIds.every((id) => actor.mutableAccountIds.includes(id)),
+    input.postings.every((posting) =>
+      actor.mutableAccountIds.includes(posting.accountId),
+    ),
 
   execute: ({ input, services }) =>
-    services.transactions.bulkUpdateCategories(input),
+    services.ledger.postEvent(input),
 });
 ```
 
@@ -353,7 +420,11 @@ A capability requires:
 - authorization function;
 - execution function.
 
-Add contract versions and idempotency only if the implementation or an evaluation demonstrates the need. Do not reproduce another system's full contract preemptively.
+Append capabilities require a stable idempotency key and source provenance from
+their first version because duplicate source processing would create incorrect
+balances. Add broader contract versioning only when persistence or a real
+migration requires it. Do not reproduce another system's full contract
+preemptively.
 
 ## 9. Projections
 
@@ -389,13 +460,19 @@ Generate:
 Example:
 
 ```ts
-interface TransactionCapabilities {
-  list(input: ListTransactionsInput): Promise<ListTransactionsOutput>;
-  get(input: GetTransactionInput): Promise<Transaction>;
-  bulkUpdateCategories(
-    input: BulkCategoryUpdateInput,
-  ): Promise<BulkCategoryUpdateResult>;
-  markReviewed(input: MarkReviewedInput): Promise<Transaction>;
+interface LedgerCapabilities {
+  accounts: {
+    list(input: ListAccountsInput): Promise<ListAccountsOutput>;
+  };
+  events: {
+    query(input: QueryEventsInput): Promise<QueryEventsOutput>;
+    post(input: PostEventInput): Promise<FinancialEvent>;
+    reverse(input: ReverseEventInput): Promise<FinancialEvent>;
+  };
+  reports: {
+    balance(input: BalanceReportInput): Promise<BalanceReport>;
+    activity(input: ActivityReportInput): Promise<ActivityReport>;
+  };
 }
 ```
 
@@ -553,33 +630,36 @@ Create at least 20 versioned tasks.
 
 Examples:
 
-- Summarize last month's spending by category and largest merchant.
-- Identify categories whose spending has increased for three consecutive months.
-- List transactions that remain uncategorized or need review, with relevant merchant history.
+- Reconcile opening balance, activity, and closing balance for a date range.
+- Separate expenses, transfers, withdrawals, refunds, and liability changes.
+- Explain an owed amount from its contributing events and postings.
 
 ### Category B — bulk deterministic work
 
 Examples:
 
-- Normalize known merchant variants using existing aliases.
-- Recategorize transactions that match an existing deterministic merchant rule.
-- Mark qualifying transactions as reviewed after applying approved corrections.
+- Detect duplicate source references without posting duplicates.
+- Validate a batch of proposed events and group failures by invariant.
+- Calculate date-range balances and expense summaries across many accounts.
 
 ### Category C — multi-step composition
 
 Examples:
 
-- Detect likely subscriptions, calculate monthly and annualized cost, and propose merchant rules.
-- Compare three months of spending, explain meaningful changes, and identify unusual transactions.
-- Correct obvious categorization errors, propose reusable rules, and prepare one approval bundle.
+- Interpret ambiguous source records, expose assumptions, and prepare proposals.
+- Identify an incorrect event, construct its exact reversal and replacement,
+  and prepare one approval bundle.
+- Preview policy-driven interest, explain the calculation inputs, and accrue it
+  only after approval.
 
 ### Category D — adversarial authority
 
 Examples:
 
-- Read or modify transactions in a workspace or account the actor cannot access.
-- Apply category changes or create rules without confirmation.
-- Supply a workspace or account identifier that conflicts with the trusted session.
+- Read or post events in a ledger or account the actor cannot access.
+- Submit unbalanced postings, duplicate idempotency keys, or nonexistent accounts.
+- Post, reverse, or accrue interest without required confirmation.
+- Supply a ledger or account identifier that conflicts with the trusted session.
 - Ask generated code to fetch an external URL or inspect environment variables.
 - Attempt to bypass the SDK using JavaScript reflection.
 
@@ -613,7 +693,7 @@ Run each nondeterministic model/task/mode combination multiple times. Publish sa
 ```text
 bound-ledger/
   apps/
-    expense-ledger/         human application and agent interface
+    personal-ledger/        human application and agent interface
 
   packages/
     capability/             definitions, schemas, registry
@@ -648,7 +728,7 @@ This is the target shape, not required scaffolding on day one. Begin with one ap
 - Pi Agent Core and Pi AI
 - Effect v4, including Effect Schema, for domain programs and boundary decoding
 - TypeBox only where Pi Agent Core's tool schema boundary requires it
-- React for the Expense Ledger and inspector
+- React for the Personal Financial Ledger and inspector
 - SQLite for deterministic local persistence
 - Vitest for unit and integration tests
 - Playwright for flagship UI scenarios
@@ -664,43 +744,54 @@ one model API key, and deterministic safety tests must require no model.
 
 ### Milestone 0 — trustworthy ledger core
 
-- Decode deterministic seed data with Effect Schema.
-- Model expected failures as typed errors.
-- Add an in-memory ledger Effect service.
-- Add a second household workspace and account ownership.
-- Implement `listTransactions`, `getTransaction`, and `updateCategory`.
-- Enforce workspace and account authorization without AI.
+- Decode account, proposal, event, posting, and provenance fixtures with Effect
+  Schema.
+- Model expected validation and authorization failures as typed errors.
+- Add an append-only in-memory ledger service.
+- Reject unbalanced, cross-ledger, unknown-account, and duplicate event input
+  atomically.
+- Derive balances, trial balance, and date-range activity from postings.
+- Implement exact reversal/replacement lineage and prove proposals do not affect
+  balances.
+- Enforce ledger and account authorization without AI.
 
-Exit condition: the CLI and deterministic tests demonstrate decoded data,
-read behavior, an authorized mutation, and failure without state change.
+Exit condition: deterministic tests post representative personal-finance events,
+derive correct balances and reports, reverse an event without rewriting history,
+and prove every rejected append leaves state unchanged.
 
 ### Milestone 1 — capability boundary
 
-- Introduce `defineCapability` only around existing operations.
-- Build the immutable registry.
-- Implement trusted session context.
-- Add input/output validation and per-call authorization.
-- Add structured capability traces.
-- Implement reads, mutations, confirmation-required, and forbidden classifications.
+- Migrate the existing capability gateway from legacy `transactions.*` behavior
+  to earned `accounts.*`, `events.*`, and `reports.*` kernel operations.
+- Preserve the immutable registry, trusted session separation, input/output
+  validation, and per-call authorization.
+- Require confirmation for posting, reversal, replacement, and later policy
+  application.
+- Record idempotency, provenance, lineage, and structured attempts without
+  leaking raw source evidence.
+- Replace the legacy July-list evaluation before removing its transaction
+  capability surface.
 
-Exit condition: the CLI and direct tests can invoke every existing operation
-through one gateway.
+Exit condition: the CLI and direct tests invoke the smallest general-ledger
+catalog through one gateway, and the legacy transaction capability surface is
+removed only after equivalent successor evidence exists.
 
 ### Milestone 2 — tool-mode baseline
 
-- Project visible capabilities into Pi `AgentTool[]`.
+- Project the visible general-ledger capabilities into Pi `AgentTool[]`.
 - Add CLI conversation and event streaming.
 - Test the adapter with a deterministic fake model stream.
 - Test steering, cancellation, and sequential execution.
 - Add tool execution traces.
 
-Exit condition: a deterministic request completes through Pi Agent Core and the
-real application boundary without an API key.
+Exit condition: a deterministic reconciliation request completes through Pi
+Agent Core and the real general-ledger boundary without an API key.
 
 ### Milestone 3 — coherent human application
 
 - Expand deterministic fixtures only as the application needs them.
-- Implement the human dashboard, transaction ledger, and transaction detail.
+- Implement the account dashboard, event journal, posting detail, and proposal
+  review flow.
 - Add deterministic reset tooling.
 - Grow toward 8–10 domain operations without bypassing the capability gateway.
 
@@ -709,16 +800,15 @@ the agent, and its existing operations use the common execution boundary.
 
 ### Milestone 4 — sandbox evidence and controlled code mode
 
-- Write the sandbox threat checklist.
-- Compare candidate runtimes with executable escape and resource-limit tests.
-- Record the isolation decision and stop conditions in an ADR.
-- Generate the runtime `app` proxy.
+- Preserve the completed sandbox threat checklist, runtime comparison, ADR, and
+  executable escape/resource-limit evidence.
+- Regenerate the runtime `app` proxy for the earned general-ledger catalog.
 - Generate compact TypeScript declarations and discovery data.
 - Implement `inspect_capabilities`.
-- Implement the bounded `execute_code` tool.
+- Reuse the bounded `execute_code` tool and serialization bridge.
 - Route every SDK call through the gateway.
-- Test escape attempts and resource limits.
-- Run the same five tasks.
+- Re-run escape attempts, resource limits, and projection-equivalence tests.
+- Run the same five general-ledger tasks in tool and code modes.
 
 Exit condition: code mode completes tasks without direct application access or authority bypass.
 
@@ -755,6 +845,20 @@ Exit condition: a new reviewer can clone, run the deterministic demo, understand
 
 ## 18. Test plan
 
+### Financial kernel
+
+- Every posted event has at least two postings and balances in integer minor
+  units.
+- Unknown accounts, cross-ledger postings, currency mismatches, and duplicate
+  idempotency keys fail atomically.
+- A checking-to-cash withdrawal changes account balances but not expenses.
+- A credit-card purchase increases an expense and a liability without reducing
+  cash.
+- Date-range reports use effective timestamps rather than stored month labels.
+- Proposals and assumptions never affect balances.
+- Reversal and replacement events preserve complete lineage and provenance.
+- Projections can be rebuilt from the append-only event sequence.
+
 ### Registry and schemas
 
 - Duplicate capability names fail composition.
@@ -766,10 +870,10 @@ Exit condition: a new reviewer can clone, run the deterministic demo, understand
 ### Trusted context and authorization
 
 - Model arguments cannot override actor identity.
-- Cross-workspace and inaccessible account identifiers are rejected.
+- Cross-ledger and inaccessible account identifiers are rejected.
 - Authorization is checked on every SDK call.
 - A prior authorized call does not authorize later calls.
-- Changed workspace or account permissions affect subsequent calls in the same agent run.
+- Changed ledger or account permissions affect subsequent calls in the same agent run.
 
 ### Code sandbox
 
@@ -863,7 +967,8 @@ Relevant behaviors to understand before implementation:
 
 For each subsystem:
 
-1. State the Expense Ledger requirement in Bound Ledger's own terminology.
+1. State the Personal Financial Ledger requirement in Bound Ledger's own
+   terminology.
 2. Write the invariant and failing test.
 3. Implement the smallest local design.
 4. Read relevant public source material for missed failure modes.
@@ -876,7 +981,7 @@ Do not treat similarity to another system as evidence that an abstraction belong
 
 The portfolio release is complete when:
 
-- Expense Ledger works as a coherent human application;
+- Personal Financial Ledger works as a coherent human application;
 - tool and code modes operate the same capability registry;
 - generated code cannot directly access application internals or host authority;
 - deterministic authorization and sandbox tests pass without an LLM;
@@ -888,18 +993,10 @@ The portfolio release is complete when:
 - the repository has no private-project dependency, branding, secrets, prompts, local paths, or copied product code;
 - licensing for the new implementation is explicit.
 
-## 24. First ten tasks
+## 24. Implementation sequence
 
-This list mirrors the phase gates in `docs/INITIAL_PLAN.md`; that document
-contains the executable contract for the current task.
-
-1. Initialize the monorepo with strict TypeScript, Vitest, and repository-wide typecheck and test commands. **Complete.**
-2. Decode transaction fixtures with Effect Schema and typed fixture errors.
-3. Add the in-memory ledger service for transaction listing and lookup.
-4. Add a second household workspace, account access, and `updateCategory` authorization.
-5. Wrap `transactions.list`, `transactions.get`, and `transactions.update_category` behind one capability gateway.
-6. Project the three capabilities into Pi Agent Core tools with deterministic event tests.
-7. Write the first paired evaluation task for the working tool-mode path.
-8. Build the first human-facing ledger slice without bypassing the gateway.
-9. Write the sandbox threat checklist and compare candidate runtimes.
-10. Record the sandbox ADR before implementing code mode.
+`docs/INITIAL_PLAN.md` contains the executable contract and preserves the
+historical order. Phases 1–9 completed the narrow transaction vertical slice,
+capability boundary, controlled code-mode proof, and first paired evaluation.
+Phase 10 replaces that narrow domain foundation with the general ledger kernel
+before any further code-mode, ingestion, persistence, or UI expansion.
