@@ -17,6 +17,7 @@ packages/code-mode bounded guest SDK and subprocess execution bridge
 packages/ledger   expense-ledger behavior and tests
 packages/pi-adapter Pi tool projection and event translation
 experiments/sandbox executable runtime comparison and threat probes
+evals/results      checked-in paired evaluation summary
 ```
 
 ## Requirements
@@ -29,6 +30,7 @@ experiments/sandbox executable runtime comparison and threat probes
 ```sh
 pnpm install
 pnpm start
+pnpm eval:july-list
 pnpm check
 ```
 
@@ -38,6 +40,10 @@ Both list July 2026 transactions through the same gateway. The CLI prints both
 agent event streams, the code-mode result, call counts, and structured
 capability attempts. Pi uses its in-memory faux provider; neither path requires
 an API key.
+`pnpm eval:july-list` runs the versioned July listing task once per mode from
+fresh fixture state, applies deterministic correctness and safety checks, and
+prints the paired metrics and comparison. The checked-in sample result is in
+[`evals/results/july-list-v1.md`](evals/results/july-list-v1.md).
 `pnpm check` typechecks and tests every workspace.
 `pnpm test:sandbox` runs the pinned QuickJS-WASM and `isolated-vm` escape and
 resource-limit comparison in disposable child processes.

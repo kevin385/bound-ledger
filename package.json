@@ -19,6 +19,7 @@
   "scripts": {
     "dev": "pnpm --filter @bound/cli dev",
     "start": "pnpm --filter @bound/cli start",
+    "eval:july-list": "pnpm --filter @bound/cli eval:july-list",
     "test": "pnpm -r --if-present test && pnpm test:sandbox",
     "test:sandbox": "node --no-node-snapshot --test experiments/sandbox/*.test.ts",
     "typecheck": "pnpm -r --if-present typecheck",
