@@ -9,7 +9,8 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 9 — Record the first paired evaluation task.
+**Current phase:** Initial implementation sequence complete — define the next
+phase here before adding architecture or product scope.
 
 ## Purpose
 
@@ -94,6 +95,8 @@ bound-ledger/
     INITIAL_PLAN.md
   experiments/
     sandbox/              executable runtime comparison and threat probes
+  evals/
+    results/              checked-in paired evaluation summary
   package.json            repository commands
   pnpm-workspace.yaml     workspaces and dependency catalog
   tsconfig.base.json      strict shared compiler policy
@@ -403,6 +406,12 @@ do not claim broader code-mode advantage from one task.
 key, fails on result/attempt/safety divergence, and emits a versioned summary
 that clearly labels the sample size and deterministic configuration.
 
+Phase 9 keeps the versioned task, runner, and scorer in the CLI composition
+root. Each mode receives a fresh decoded fixture and gateway. The checked-in
+summary records one deterministic sample, separates outer model/tool counts
+from inner capability calls, treats timing as diagnostic, and makes no broader
+claim from the result.
+
 ## Packages that must earn their existence
 
 | Package | Add when |
@@ -417,11 +426,8 @@ that clearly labels the sample size and deterministic configuration.
 
 ## Immediate next task
 
-Implement Phase 9 only. Add one versioned July-list paired evaluation task and
-the smallest deterministic runner/scorer needed to compare the existing Pi
-tool and code projections from reset fixture state.
-
-When the current phase is complete, update **Current phase** at the top of this
-document in the same pull request. A new contributor should never need an
-issue, private repository, or prior conversation to discover the next permitted
-work.
+The initial nine-phase sequence is complete. Before implementation resumes,
+add a reviewed next phase to this document with its local requirement, package
+ownership, tests, non-goals, and exit condition. The first paired evaluation is
+only one deterministic retrieval sample and does not justify a general harness,
+UI, persistence, live-model path, or broader code-mode claim.
