@@ -3,6 +3,7 @@ import { Context, Layer } from "effect"
 export interface Session {
   readonly actorId: string
   readonly activeWorkspaceId: string
+  readonly activeLedgerId?: string
   readonly readableAccountIds: ReadonlySet<string>
   readonly mutableAccountIds: ReadonlySet<string>
 }
