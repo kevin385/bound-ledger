@@ -1,7 +1,9 @@
 import { Data, Effect, Schema } from "effect"
 
 import type {
+  KernelAppendError,
   LedgerMutationError,
+  LedgerKernelService,
   LedgerService,
   Session,
 } from "@bound/ledger"
@@ -68,10 +70,13 @@ export type CapabilityInvocationError =
   | UnknownCapabilityError
   | InvalidCapabilityInputError
   | InvalidCapabilityOutputError
-  | LedgerMutationError
+  | CapabilityDomainError
+
+export type CapabilityDomainError = LedgerMutationError | KernelAppendError
 
 export interface CapabilityRuntime {
   readonly ledger: LedgerService
+  readonly kernel: LedgerKernelService
   readonly session: Session
 }
 
@@ -87,11 +92,11 @@ export interface CapabilityDefinition {
   readonly authorize: (
     input: unknown,
     runtime: CapabilityRuntime,
-  ) => Effect.Effect<void, LedgerMutationError>
+  ) => Effect.Effect<void, CapabilityDomainError>
   readonly execute: (
     input: unknown,
     runtime: CapabilityRuntime,
-  ) => Effect.Effect<unknown, LedgerMutationError>
+  ) => Effect.Effect<unknown, CapabilityDomainError>
   readonly decodeOutput: (
     output: unknown,
   ) => Effect.Effect<unknown, InvalidCapabilityOutputError>
@@ -106,11 +111,11 @@ export interface CapabilitySpec<Input, Output> {
   readonly authorize: (
     input: Input,
     runtime: CapabilityRuntime,
-  ) => Effect.Effect<void, LedgerMutationError>
+  ) => Effect.Effect<void, CapabilityDomainError>
   readonly execute: (
     input: Input,
     runtime: CapabilityRuntime,
-  ) => Effect.Effect<Output, LedgerMutationError>
+  ) => Effect.Effect<Output, CapabilityDomainError>
 }
 
 const parseOptions = {

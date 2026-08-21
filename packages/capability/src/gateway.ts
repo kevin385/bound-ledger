@@ -2,10 +2,17 @@ import { Context, Effect, Layer, Ref } from "effect"
 
 import {
   Ledger,
+  LedgerKernel,
   TrustedSession,
+  type AccountBalance,
+  type ActivityReport,
+  type FinancialEvent,
+  type LedgerAccount,
+  type LedgerKernelService,
   type LedgerService,
   type Session,
   type Transaction,
+  type TrialBalance,
 } from "@bound/ledger"
 
 import {
@@ -33,6 +40,30 @@ type Invoke = {
     input: unknown,
   ): Effect.Effect<Transaction, CapabilityInvocationError>
   (
+    name: "accounts.list",
+    input: unknown,
+  ): Effect.Effect<ReadonlyArray<LedgerAccount>, CapabilityInvocationError>
+  (
+    name: "events.get",
+    input: unknown,
+  ): Effect.Effect<FinancialEvent, CapabilityInvocationError>
+  (
+    name: "events.query",
+    input: unknown,
+  ): Effect.Effect<ReadonlyArray<FinancialEvent>, CapabilityInvocationError>
+  (
+    name: "reports.balance",
+    input: unknown,
+  ): Effect.Effect<ReadonlyArray<AccountBalance>, CapabilityInvocationError>
+  (
+    name: "reports.activity",
+    input: unknown,
+  ): Effect.Effect<ActivityReport, CapabilityInvocationError>
+  (
+    name: "reports.trial_balance",
+    input: unknown,
+  ): Effect.Effect<TrialBalance, CapabilityInvocationError>
+  (
     name: string,
     input: unknown,
   ): Effect.Effect<unknown, CapabilityInvocationError>
@@ -55,11 +86,12 @@ export const makeCapabilityGatewayLayer = (
 ): Layer.Layer<
   CapabilityGatewayService,
   DuplicateCapabilityError,
-  LedgerService | Session
+  LedgerKernelService | LedgerService | Session
 > =>
   Layer.effect(CapabilityGateway)(
     Effect.gen(function* () {
       const ledger = yield* Ledger
+      const kernel = yield* LedgerKernel
       const session = yield* TrustedSession
       const registry = new Map<string, CapabilityDefinition>()
 
@@ -135,7 +167,9 @@ export const makeCapabilityGatewayLayer = (
             ),
           )
 
-          yield* definition.authorize(decodedInput, { ledger, session }).pipe(
+          const runtime = { ledger, kernel, session }
+
+          yield* definition.authorize(decodedInput, runtime).pipe(
             Effect.catch((error) =>
               fail(
                 definition,
@@ -148,7 +182,7 @@ export const makeCapabilityGatewayLayer = (
           )
 
           const output = yield* definition
-            .execute(decodedInput, { ledger, session })
+            .execute(decodedInput, runtime)
             .pipe(
               Effect.catch((error) =>
                 fail(

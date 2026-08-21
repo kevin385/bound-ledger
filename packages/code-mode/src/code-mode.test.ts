@@ -10,10 +10,13 @@ import {
 import {
   decodeFixtureAccounts,
   decodeFixtureTransactions,
+  decodeKernelFixture,
   LedgerAuthorizationError,
   makeInMemoryLedgerLayer,
+  makeInMemoryLedgerKernelLayer,
   makeTrustedSessionLayer,
   sampleAccountsFixture,
+  sampleKernelFixture,
   sampleTransactionsFixture,
   type Session,
 } from "@bound/ledger"
@@ -37,11 +40,21 @@ const makeSampleGateway = (): Promise<CapabilityGatewayService> =>
         sampleTransactionsFixture,
       )
       const accounts = yield* decodeFixtureAccounts(sampleAccountsFixture)
+      const kernelFixture = yield* decodeKernelFixture(sampleKernelFixture)
       const sessionLayer = makeTrustedSessionLayer(primarySession)
       const ledgerLayer = makeInMemoryLedgerLayer(transactions, accounts).pipe(
         Layer.provide(sessionLayer),
       )
-      const runtimeLayer = Layer.merge(ledgerLayer, sessionLayer)
+      const kernelLayer = makeInMemoryLedgerKernelLayer({
+        currency: kernelFixture.currency,
+        accounts: kernelFixture.accounts,
+        events: kernelFixture.events,
+        proposals: kernelFixture.proposals,
+      }).pipe(Layer.provide(sessionLayer))
+      const runtimeLayer = Layer.merge(
+        Layer.merge(ledgerLayer, kernelLayer),
+        sessionLayer,
+      )
       const gatewayLayer = makeCapabilityGatewayLayer().pipe(
         Layer.provide(runtimeLayer),
       )

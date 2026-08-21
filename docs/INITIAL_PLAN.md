@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 10 — General ledger kernel.
+**Current phase:** Phase 11 complete — the next phase is not yet documented.
 
 ## Purpose
 
@@ -612,6 +612,100 @@ derives correct balances/trial balance/expenses/date-range activity, reverses
 and replaces an event without rewriting history, preserves complete provenance,
 and keeps every pre-existing check passing.
 
+Phase 10 added the single-currency append-only kernel and its deterministic
+fixture, invariant, authorization, projection, reversal, replacement, and replay
+coverage. The legacy transaction proof remains intact as compatibility evidence.
+
+## Phase 11 — Add read-only general-ledger capabilities
+
+Move the first earned general-ledger operations through the existing capability
+gateway before changing either agent projection. This phase proves that the new
+kernel can use the same input validation, trusted-session separation,
+authorization, output validation, and structured attempt path as the legacy
+transaction slice.
+
+### Capability surface
+
+Add only these read capabilities:
+
+```text
+accounts.list
+events.get
+events.query
+reports.balance
+reports.activity
+reports.trial_balance
+```
+
+`accounts.list` may add the smallest corresponding read operation to
+`LedgerKernelService`. It returns only accounts in the active ledger that the
+trusted session may read. Event queries and reports continue to derive from
+posted events and use half-open effective-time ranges.
+
+Keep the new definitions in a separate general-ledger catalog. The default
+tool/code catalog remains the legacy transaction catalog during this phase, so
+the Phase 1–9 agent proof and paired July evaluation do not silently change.
+During the transition, the common gateway runtime may compose both in-memory
+services; it must still use one registry and invocation implementation.
+
+### Required tests and evidence
+
+- The kernel lists only readable accounts from the active ledger.
+- Direct gateway tests invoke all six capabilities through one path.
+- ISO timestamp strings decode to canonical UTC values before execution.
+- Unexpected properties and invalid timestamps fail before authorization or
+  execution.
+- Missing active-ledger authority and inaccessible events fail closed and are
+  recorded as structured refusals.
+- Successful outputs are decoded before returning to the caller.
+- One deterministic CLI command prints accounts, July activity, balances, and
+  trial balance through the general-ledger catalog.
+- The legacy CLI demonstration and paired July evaluation remain unchanged and
+  passing.
+
+### Expected files
+
+```text
+packages/ledger/src/ledger-kernel.ts
+packages/ledger/src/ledger-kernel.test.ts
+packages/capability/src/general-ledger-capabilities.ts
+packages/capability/src/general-ledger-capabilities.test.ts
+packages/capability/src/capability.ts
+packages/capability/src/gateway.ts
+packages/capability/src/index.ts
+apps/cli/src/read-general-ledger.ts
+```
+
+### Non-goals
+
+- No posting, reversal, replacement, proposal append, or other mutation
+  capability.
+- No confirmation mechanism.
+- No change to Pi tool projection, code-mode discovery, generated SDK behavior,
+  sandbox limits, or the paired evaluation task.
+- No removal or extension of the legacy `Transaction` model or
+  `transactions.*` capabilities.
+- No persistence, ingestion, interest, UI, or new workspace package.
+
+### Verification
+
+```sh
+pnpm check
+pnpm start
+pnpm demo:ledger-read
+pnpm eval:july-list
+```
+
+**Exit condition:** all six read-only general-ledger capabilities execute
+through the common gateway with decoded inputs and outputs, trusted
+authorization, and structured attempts; the deterministic CLI evidence is
+reproducible; and every legacy tool/code check remains passing.
+
+Phase 11 added the separate read-only general-ledger catalog, authorized account
+listing, decoded UTC report inputs, validated domain outputs, direct gateway
+coverage, and deterministic CLI evidence. The default agent catalog remains the
+legacy transaction slice, and its paired evaluation continues to pass unchanged.
+
 ## Packages that must earn their existence
 
 | Package | Add when |
@@ -627,8 +721,8 @@ and keeps every pre-existing check passing.
 
 ## Immediate next task
 
-Implement Phase 10 only. Establish the single-currency append-only general
-ledger kernel and its deterministic tests inside `@bound/ledger`. Preserve the
-legacy transaction proof as compatibility evidence, and do not begin capability
-migration, interest policies, ingestion, persistence, UI, or further code-mode
-work until the Phase 10 exit condition passes and the next phase is documented.
+Document the next phase before changing code. The next likely boundary is
+confirmation-bound general-ledger mutations, but its authority model, approval
+binding, smallest capability surface, tests, and legacy-removal gates must be
+written here before implementation. Do not begin agent projection migration,
+interest policies, ingestion, persistence, UI, or further code-mode work early.

@@ -3,6 +3,7 @@ export {
   type CapabilityAttemptStage,
   type CapabilityAuthorization,
   type CapabilityDefinition,
+  type CapabilityDomainError,
   type CapabilityInvocationError,
   type CapabilityKind,
   type CapabilityMetadata,
@@ -14,6 +15,21 @@ export {
   InvalidCapabilityOutputError,
   UnknownCapabilityError,
 } from "./capability.ts"
+export {
+  ActivityReportInputSchema,
+  BalanceReportInputSchema,
+  generalLedgerReadCapabilities,
+  GetEventInputSchema,
+  ListAccountsInputSchema,
+  QueryEventsInputSchema,
+  TrialBalanceReportInputSchema,
+  type ActivityReportInput,
+  type BalanceReportInput,
+  type GetEventInput,
+  type ListAccountsInput,
+  type QueryEventsInput,
+  type TrialBalanceReportInput,
+} from "./general-ledger-capabilities.ts"
 export {
   CapabilityGateway,
   makeCapabilityGatewayLayer,

@@ -5,9 +5,12 @@ import { describe, expect } from "vitest"
 import {
   decodeFixtureAccounts,
   decodeFixtureTransactions,
+  decodeKernelFixture,
   makeInMemoryLedgerLayer,
+  makeInMemoryLedgerKernelLayer,
   makeTrustedSessionLayer,
   sampleAccountsFixture,
+  sampleKernelFixture,
   sampleTransactionsFixture,
   type Session,
 } from "@bound/ledger"
@@ -48,13 +51,23 @@ const withSampleGateway = <A, E>(
       sampleTransactionsFixture,
     )
     const accounts = yield* decodeFixtureAccounts(sampleAccountsFixture)
+    const kernelFixture = yield* decodeKernelFixture(sampleKernelFixture)
     const sessionLayer = makeTrustedSessionLayer(
       options.session ?? primarySession,
     )
     const ledgerLayer = makeInMemoryLedgerLayer(transactions, accounts).pipe(
       Layer.provide(sessionLayer),
     )
-    const runtimeLayer = Layer.merge(ledgerLayer, sessionLayer)
+    const kernelLayer = makeInMemoryLedgerKernelLayer({
+      currency: kernelFixture.currency,
+      accounts: kernelFixture.accounts,
+      events: kernelFixture.events,
+      proposals: kernelFixture.proposals,
+    }).pipe(Layer.provide(sessionLayer))
+    const runtimeLayer = Layer.merge(
+      Layer.merge(ledgerLayer, kernelLayer),
+      sessionLayer,
+    )
     const gatewayLayer = makeCapabilityGatewayLayer(
       options.definitions,
     ).pipe(Layer.provide(runtimeLayer))
