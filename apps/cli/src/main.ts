@@ -19,9 +19,12 @@ import {
 import {
   decodeFixtureAccounts,
   decodeFixtureTransactions,
+  decodeKernelFixture,
   makeInMemoryLedgerLayer,
+  makeInMemoryLedgerKernelLayer,
   makeTrustedSessionLayer,
   sampleAccountsFixture,
+  sampleKernelFixture,
   sampleTransactionsFixture,
   type Session,
 } from "@bound/ledger"
@@ -61,12 +64,21 @@ const program = Effect.gen(function* () {
     sampleTransactionsFixture,
   )
   const accounts = yield* decodeFixtureAccounts(sampleAccountsFixture)
+  const kernelFixture = yield* decodeKernelFixture(sampleKernelFixture)
   const sessionLayer = makeTrustedSessionLayer(session)
   const ledgerLayer = makeInMemoryLedgerLayer(transactions, accounts).pipe(
     Layer.provide(sessionLayer),
   )
+  const kernelLayer = makeInMemoryLedgerKernelLayer({
+    currency: kernelFixture.currency,
+    accounts: kernelFixture.accounts,
+    events: kernelFixture.events,
+    proposals: kernelFixture.proposals,
+  }).pipe(Layer.provide(sessionLayer))
   const capabilityLayer = makeCapabilityGatewayLayer().pipe(
-    Layer.provide(Layer.merge(ledgerLayer, sessionLayer)),
+    Layer.provide(
+      Layer.merge(Layer.merge(ledgerLayer, kernelLayer), sessionLayer),
+    ),
   )
   const result = yield* CapabilityGateway.use((gateway) =>
     Effect.gen(function* () {

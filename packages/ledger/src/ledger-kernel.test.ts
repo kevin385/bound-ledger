@@ -116,6 +116,30 @@ const post = (kernel: LedgerKernelService, input: PostEventInput) =>
   kernel.postEvent(input)
 
 describe("LedgerKernel", () => {
+  it.effect("lists only readable accounts in the active ledger", () =>
+    withKernel(
+      (kernel) =>
+        Effect.gen(function* () {
+          const accounts = yield* kernel.listAccounts()
+
+          expect(accounts.map((account) => account.id)).toEqual([
+            "acct_checking",
+            "acct_credit",
+          ])
+        }),
+      {
+        session: {
+          ...primarySession,
+          readableAccountIds: new Set([
+            "acct_checking",
+            "acct_credit",
+            "acct_secondary_checking",
+          ]),
+        },
+      },
+    ),
+  )
+
   it.effect("posts a deposit that increases the asset and income balances", () =>
     withKernel((kernel) =>
       Effect.gen(function* () {

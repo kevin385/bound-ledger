@@ -86,6 +86,9 @@ export {
   type KernelFixture,
 } from "./financial-fixtures.ts"
 export {
+  AccountBalanceListSchema,
+  AccountBalanceSchema,
+  ActivityReportSchema,
   CrossLedgerPostingError,
   CurrencyMismatchError,
   DuplicateIdempotencyKeyError,
@@ -96,6 +99,7 @@ export {
   LedgerKernel,
   makeInMemoryLedgerKernelLayer,
   MissingLineageTargetError,
+  TrialBalanceSchema,
   UnbalancedEventError,
   UnknownAccountError,
   type AccountBalance,

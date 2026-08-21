@@ -1,18 +1,20 @@
-import { Context, Data, DateTime, Effect, Layer, Ref } from "effect"
+import { Context, Data, DateTime, Effect, Layer, Ref, Schema } from "effect"
 
 import type { LedgerAccount } from "./chart-account.ts"
-import type {
-  AppendProposalInput,
-  EventProposal,
-  FinancialEvent,
-  PostEventInput,
-  Posting,
-  ReverseEventInput,
+import {
+  FinancialEventSchema,
+  type AppendProposalInput,
+  type EventProposal,
+  type FinancialEvent,
+  type PostEventInput,
+  type Posting,
+  type ReverseEventInput,
 } from "./financial-event.ts"
-import type { Currency } from "./money.ts"
+import { AmountMinorSchema, type Currency } from "./money.ts"
 import { TrustedSession, type Session } from "./trusted-session.ts"
 
 export type KernelOperation =
+  | "accounts.list"
   | "events.post"
   | "events.get"
   | "events.query"
@@ -108,25 +110,37 @@ export type KernelAppendError =
 
 export type KernelReadError = KernelAuthorizationError | EventNotFoundError
 
-export interface AccountBalance {
-  readonly accountId: string
-  readonly amountMinor: number
-}
+export const AccountBalanceSchema = Schema.Struct({
+  accountId: Schema.NonEmptyString,
+  amountMinor: AmountMinorSchema,
+})
 
-export interface ActivityReport {
-  readonly from: DateTime.Utc
-  readonly to: DateTime.Utc
-  readonly events: ReadonlyArray<FinancialEvent>
-  readonly expenseTotalMinor: number
-}
+export const AccountBalanceListSchema = Schema.Array(AccountBalanceSchema)
 
-export interface TrialBalance {
-  readonly at: DateTime.Utc
-  readonly balances: ReadonlyArray<AccountBalance>
-  readonly totalMinor: number
-}
+export const ActivityReportSchema = Schema.Struct({
+  from: Schema.DateTimeUtc,
+  to: Schema.DateTimeUtc,
+  events: Schema.Array(Schema.toType(FinancialEventSchema)),
+  expenseTotalMinor: AmountMinorSchema,
+})
+
+export const TrialBalanceSchema = Schema.Struct({
+  at: Schema.DateTimeUtc,
+  balances: AccountBalanceListSchema,
+  totalMinor: AmountMinorSchema,
+})
+
+export type AccountBalance = Schema.Schema.Type<typeof AccountBalanceSchema>
+
+export type ActivityReport = Schema.Schema.Type<typeof ActivityReportSchema>
+
+export type TrialBalance = Schema.Schema.Type<typeof TrialBalanceSchema>
 
 export interface LedgerKernelService {
+  readonly listAccounts: () => Effect.Effect<
+    ReadonlyArray<LedgerAccount>,
+    KernelAuthorizationError
+  >
   readonly appendProposal: (
     input: AppendProposalInput,
   ) => Effect.Effect<EventProposal, KernelAppendError>
@@ -429,6 +443,15 @@ export const makeInMemoryLedgerKernelLayer = (options: {
       }
 
       return {
+        listAccounts: Effect.fn("LedgerKernel.listAccounts")(function* () {
+          const ledgerId = yield* requireActiveLedger("accounts.list")
+
+          return options.accounts.filter(
+            (account) =>
+              account.ledgerId === ledgerId &&
+              session.readableAccountIds.has(account.id),
+          )
+        }),
         appendProposal: Effect.fn("LedgerKernel.appendProposal")(function* (
           input: AppendProposalInput,
         ) {

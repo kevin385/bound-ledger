@@ -30,6 +30,7 @@ evals/results      checked-in paired evaluation summary
 ```sh
 pnpm install
 pnpm start
+pnpm demo:ledger-read
 pnpm eval:july-list
 pnpm check
 ```
@@ -40,6 +41,10 @@ Both list July 2026 transactions through the same gateway. The CLI prints both
 agent event streams, the code-mode result, call counts, and structured
 capability attempts. Pi uses its in-memory faux provider; neither path requires
 an API key.
+`pnpm demo:ledger-read` runs the first read-only general-ledger catalog directly
+through the shared capability gateway. It prints readable accounts, July posted
+activity and expenses, balances, trial balance, and structured attempts without
+using an agent projection.
 `pnpm eval:july-list` runs the versioned July listing task once per mode from
 fresh fixture state, applies deterministic correctness and safety checks, and
 prints the paired metrics and comparison. The checked-in sample result is in

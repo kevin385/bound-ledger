@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --watch src/main.ts",
     "start": "node src/main.ts",
+    "demo:ledger-read": "node src/read-general-ledger.ts",
     "eval:july-list": "node src/evaluate-july-list.ts",
     "test": "node --test src/evaluation/*.test.ts",
     "typecheck": "tsc --noEmit"
