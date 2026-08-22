@@ -53,11 +53,15 @@ test("human ledger workflow stays capability-governed", async ({ page }) => {
   await expect(page.getByText("5 posted events", { exact: true })).toBeVisible()
   await page.getByRole("link", { name: "evt_011" }).click()
   await expect(page.getByText("manual · expense-july-confirmed")).toBeVisible()
+  const reversalResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.request().headers()["x-tsr-serverfn"] === "true",
+  )
   await page.getByRole("button", { name: "Request reversal" }).click()
-  await expect(
-    page.getByText("Confirmation required", { exact: true }),
-  ).toBeVisible()
+  expect((await reversalResponse).ok()).toBe(true)
   await page.getByRole("link", { name: "Open review queue" }).click()
+  await expect(page.getByText("1 pending", { exact: true })).toBeVisible()
   await page.getByRole("button", { name: "Confirm confirmation_003" }).click()
   await expect(
     page.getByText("Mutation completed", { exact: true }),
