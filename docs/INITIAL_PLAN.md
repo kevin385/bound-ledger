@@ -9,8 +9,8 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 16 planned — add a read-only visual comparison
-workbench. Phase 15 is complete and verified; Phase 16 is the next
+**Current phase:** Phase 17 planned — broaden the deterministic paired
+evaluation suite. Phase 16 is complete and verified; Phase 17 is the next
 implementation boundary.
 
 ## Purpose
@@ -24,8 +24,9 @@ capability, agent, sandbox, and evaluation boundaries. Phases 10–14 replaced
 that domain foundation with the general-ledger kernel, moved its earned
 operations through the gateway and Pi tool mode, and added the governed human
 application. Phase 15 migrated the controlled code-mode proof to that same
-general-ledger catalog. Phase 16 may now expose the already-earned comparison
-evidence visually, before persistence, ingestion, or provider choice.
+general-ledger catalog. Phase 16 exposed the already-earned comparison evidence
+visually. Phase 17 now widens that deterministic evidence before persistence,
+ingestion, or provider choice.
 
 ## Project naming
 
@@ -1483,7 +1484,7 @@ code mode used one outer tool containing the same three reads. The historical
 July-list result is retained and marked superseded; its command and runner were
 removed.
 
-## Phase 16 — Add a visual comparison workbench
+## Phase 16 — Add a visual comparison workbench (complete)
 
 Expose the Phase 15 evidence in the existing personal-ledger application so a
 person can understand what exists without reading terminal JSON. This phase is
@@ -1606,27 +1607,161 @@ ordered gateway calls, scores, and `3` versus `1` outer-call difference without
 receiving new authority or exposing trusted context; all prior evidence remains
 green.
 
+### Completion evidence
+
+Completed on 2026-08-22. The canonical task, runner, result contract, and scorer
+now live in the earned `@bound/evaluation` package and are consumed by both the
+CLI and the trusted application server. `/comparison` starts idle, runs from
+fresh fixture and sandbox state only on explicit request, and renders the exact
+facts, scores, ordered gateway reads, `3 -> 3` tool path, `1 -> 3` code path,
+fixed read-only program, and deterministic-proof limitation. Its closed server
+input accepts no authority or program values; the browser result excludes
+trusted identifiers, decoded inputs, permissions, provider internals,
+confirmation control, and host errors and is rejected above 64 KiB. Unit,
+build, desktop, forced-failure, and narrow-viewport browser evidence passed
+without regressing any Phase 1–15 check.
+
+## Phase 17 — Broaden the deterministic paired evaluation suite
+
+One passing reconciliation is enough to verify wiring but not enough to
+support a meaningful tool/code conclusion. Expand the shared evaluation
+boundary across the already-earned general-ledger behavior before spending
+effort on live providers, persistence, or ingestion.
+
+### Local requirement
+
+Define a closed catalog of five versioned tasks, including the existing
+`general-ledger-reconciliation` v1 unchanged. Add four deterministic tasks that
+exercise distinct capability shapes:
+
+1. account and balance snapshot through `accounts.list` and
+   `reports.balance`;
+2. event selection and detail retrieval through `events.query` and
+   `events.get`;
+3. an expense-post proposal that must stop at `events.post` pending trusted
+   confirmation without appending an event;
+4. a reversal proposal that must stop at `events.reverse` pending trusted
+   confirmation without appending a reversal.
+
+Each task owns its fixture version, fixed prompt, stable expected result,
+allowed ordered attempt sequence, mode-specific faux-provider script, fixed
+code program, correctness checks, and safety checks. Runs begin from separately
+decoded fresh fixture and trusted-session state for every task and mode. The
+existing reconciliation result and command remain backward compatible.
+
+### Suite contract
+
+Add one suite runner that executes all five tasks in both modes and returns a
+versioned aggregate with:
+
+- task identity, mode result, correctness and safety checks, and comparison;
+- outer turns, outer tool calls, inner capability calls, mutation calls, and
+  diagnostic duration for each mode;
+- aggregate pass counts and failure task IDs without averaging away a failed
+  safety invariant;
+- explicit read, pending-confirmation, and authorization outcome coverage;
+- deterministic configuration and the existing timing limitation.
+
+The process exits unsuccessfully if a task is missing, duplicated, unordered,
+uses a different fixture or expected result than declared, fails a correctness
+or safety check, mutates during a pending-confirmation task, or diverges across
+modes where equivalence is required. Aggregate success is the conjunction of
+every task's required checks; it is never a rounded average.
+
+The shared package may add task-specific modules and a small registry, but it
+must not become a generic provider, trace, fixture, or policy framework. The
+CLI stays a thin JSON renderer. Keep Node-only runners out of the browser-safe
+task export.
+
+### Required tests and evidence
+
+- the registry contains exactly five unique versioned task IDs in stable order;
+- every task runs each mode from fresh state and produces its exact declared
+  result and attempt sequence;
+- the two added read tasks cannot mutate or request confirmation;
+- both mutation tasks return equivalent immutable pending previews, make no
+  append, expose no approval/rejection tool, and cannot continue after pending;
+- scorer mutation tests prove that one changed fact, attempt, authorization,
+  confirmation stage, or state delta fails the relevant task and aggregate;
+- repeated suite runs are equivalent except for diagnostic duration;
+- the original reconciliation export, CLI command, checked-in result, server
+  projection, and `/comparison` browser behavior remain compatible;
+- `pnpm check`, the sandbox probes, application build, and all browser tests
+  remain green.
+
+Check in one human-readable aggregate result under `evals/results` with the
+exact configuration, per-task outcomes, limitations, and reproduction command.
+Do not claim model-family, cost, token, latency, or general code-mode advantage
+from deterministic faux-provider runs.
+
+### Expected files
+
+```text
+packages/evaluation/src/tasks/
+packages/evaluation/src/suite.ts
+packages/evaluation/src/suite.test.ts
+apps/cli/src/evaluate-suite.ts
+evals/results/general-ledger-suite-v1.md
+package.json
+README.md
+docs/INITIAL_PLAN.md
+```
+
+Choose exact filenames around the existing package rather than duplicating its
+public API. The existing task may move internally only if its current public
+exports and behavior remain intact.
+
+### Non-goals
+
+- No live model calls, provider selector, local-model adapter, API-key storage,
+  prompt editor, or user-supplied program.
+- No persistence, authentication, import, bank connection, deployment, real
+  financial data, or multi-user behavior.
+- No new ledger or gateway capability and no trusted confirmation execution.
+- No statistical claim from one scripted run per task and no task-count padding
+  with aliases of the same behavior.
+- No comparison-page redesign; the Phase 16 route remains the stable visual
+  proof for the original reconciliation task.
+
+### Verification
+
+```sh
+pnpm check
+pnpm start
+pnpm eval:general-ledger
+pnpm eval:suite
+pnpm build:personal-ledger
+pnpm test:e2e
+```
+
+**Exit condition:** five distinct, versioned general-ledger tasks pass exact
+tool/code correctness and safety checks from fresh state; read tasks remain
+read-only, confirmation-required tasks stop without mutation, one aggregate
+command and checked-in result expose every outcome and limitation, and all
+Phase 1–16 evidence remains green.
+
 ## Packages that must earn their existence
 
-| Boundary                   | Status             | Add when                                                                                                                |
-| -------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `@bound/capability`        | Earned             | Three existing operations need one validated and authorized invocation path.                                            |
-| `@bound/pi-adapter`        | Earned             | The capability boundary is tested and ready for an agent surface.                                                       |
-| `@bound/code-mode`         | Earned             | The sandbox ADR passes its decision gate.                                                                               |
-| `apps/personal-ledger`     | Earned             | The CLI demonstrates the general-ledger agent path and the human workflow must use the same gateway.                    |
-| Shared evaluation boundary | Phase 16 candidate | The CLI and trusted application server need one canonical task, scorer, and runner without cross-app imports.           |
-| `@bound/trace`             | Deferred           | A second application consumer needs the same stable trace vocabulary.                                                   |
-| `@bound/testing`           | Deferred           | Two packages genuinely share fixtures or test runtime construction.                                                     |
-| Policy package             | Deferred           | At least two consumers need the same effective-dated policy behavior after the posting kernel is stable.                |
-| Database package           | Deferred           | In-memory behavior is stable, product validation justifies persistence, and a migration/backup contract is documented.  |
-| Provider package           | Deferred           | At least two application consumers need the same tested model-provider configuration rather than app-owned composition. |
+| Boundary               | Status   | Add when                                                                                                                |
+| ---------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `@bound/capability`    | Earned   | Three existing operations need one validated and authorized invocation path.                                            |
+| `@bound/pi-adapter`    | Earned   | The capability boundary is tested and ready for an agent surface.                                                       |
+| `@bound/code-mode`     | Earned   | The sandbox ADR passes its decision gate.                                                                               |
+| `apps/personal-ledger` | Earned   | The CLI demonstrates the general-ledger agent path and the human workflow must use the same gateway.                    |
+| `@bound/evaluation`    | Earned   | The CLI and trusted application server consume one canonical task, scorer, and runner without cross-app imports.        |
+| `@bound/trace`         | Deferred | A second application consumer needs the same stable trace vocabulary.                                                   |
+| `@bound/testing`       | Deferred | Two packages genuinely share fixtures or test runtime construction.                                                     |
+| Policy package         | Deferred | At least two consumers need the same effective-dated policy behavior after the posting kernel is stable.                |
+| Database package       | Deferred | In-memory behavior is stable, product validation justifies persistence, and a migration/backup contract is documented.  |
+| Provider package       | Deferred | At least two application consumers need the same tested model-provider configuration rather than app-owned composition. |
 
 ## Immediate next task
 
-Implement Phase 16 in its documented order. Start by moving the canonical
-evaluation contract behind one shared server-safe boundary with parity and
-redaction tests; then build the read-only `/comparison` route over that result.
-Do not begin with live models, arbitrary prompts, persistence, ingestion,
-provider adapters, or confirmation controls. The first reviewable slice is
-complete when the CLI and a trusted server projection return the same stable
-comparison facts without exposing actor, ledger, permission, or host details.
+Implement Phase 17 in its documented order. Start with the closed five-task
+catalog and exact scorer contracts, then add fresh-state paired runners and the
+fail-closed aggregate before adding the CLI result. Preserve the Phase 16
+browser projection unchanged. Do not begin with live models, editable prompts,
+persistence, ingestion, provider adapters, or trusted confirmation execution.
+The first reviewable slice is complete when the registry and scorer mutation
+tests prove the two read and two pending-confirmation additions cannot pass on
+incorrect facts, attempts, authority, confirmation stage, or state delta.

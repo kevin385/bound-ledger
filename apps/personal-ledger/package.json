@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@bound/capability": "workspace:*",
+    "@bound/evaluation": "workspace:*",
     "@bound/ledger": "workspace:*",
     "@astryxdesign/core": "catalog:",
     "@astryxdesign/theme-neutral": "catalog:",

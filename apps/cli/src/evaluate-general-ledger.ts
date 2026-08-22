@@ -1,4 +1,4 @@
-import { runGeneralLedgerReconciliationEvaluation } from "./evaluation/general-ledger-reconciliation-v1.ts"
+import { runGeneralLedgerReconciliationEvaluation } from "@bound/evaluation"
 
 runGeneralLedgerReconciliationEvaluation()
   .then((summary) => {
