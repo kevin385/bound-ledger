@@ -3,20 +3,15 @@ import {
   type AgentEvent,
   type StreamFn,
 } from "@earendil-works/pi-agent-core"
-import type {
-  AssistantMessage,
-  Model,
-} from "@earendil-works/pi-ai"
+import type { AssistantMessage, Model } from "@earendil-works/pi-ai"
 
 import type { CapabilityGatewayService } from "@bound/capability"
 
 import { projectLedgerTools } from "./tools.ts"
-import {
-  formatCodeModeGuide,
-  projectCodeModeTools,
-} from "./code-tools.ts"
+import { projectGeneralLedgerTools } from "./general-ledger-tools.ts"
+import { formatCodeModeGuide, projectCodeModeTools } from "./code-tools.ts"
 
-export type LedgerAgentMode = "tool" | "code"
+export type LedgerAgentMode = "tool" | "general_ledger" | "code"
 
 export type LedgerAgentEvent =
   | { readonly type: "text_delta"; readonly delta: string }
@@ -40,6 +35,13 @@ export interface LedgerAgentOptions {
   readonly mode?: LedgerAgentMode
   readonly systemPrompt?: string
   readonly onEvent?: (event: LedgerAgentEvent) => void | Promise<void>
+  readonly onControl?: (control: LedgerAgentControl) => void
+}
+
+export interface LedgerAgentControl {
+  readonly steer: (message: string) => void
+  readonly followUp: (message: string) => void
+  readonly abort: () => void
 }
 
 export interface LedgerAgentRunResult {
@@ -97,7 +99,9 @@ export const runLedgerAgentPrompt = async (
     options.systemPrompt ??
     (mode === "code"
       ? "You are the Bound Ledger assistant. Use execute_code for ledger facts."
-      : "You are the Bound Ledger assistant. Use ledger tools for ledger facts.")
+      : mode === "general_ledger"
+        ? "You are the Bound Ledger assistant. Use general-ledger tools for ledger facts. Mutation tools can only request trusted user confirmation; never claim a pending mutation executed."
+        : "You are the Bound Ledger assistant. Use ledger tools for ledger facts.")
   const systemPrompt =
     mode === "code"
       ? `${baseSystemPrompt}\n\nCode-mode guide: ${formatCodeModeGuide(options.gateway)}`
@@ -109,7 +113,9 @@ export const runLedgerAgentPrompt = async (
       tools:
         mode === "code"
           ? [...projectCodeModeTools(options.gateway)]
-          : [...projectLedgerTools(options.gateway)],
+          : mode === "general_ledger"
+            ? [...projectGeneralLedgerTools(options.gateway)]
+            : [...projectLedgerTools(options.gateway)],
     },
     streamFn: options.streamFn,
     toolExecution: "sequential",
@@ -122,6 +128,14 @@ export const runLedgerAgentPrompt = async (
       events.push(event)
       await options.onEvent?.(event)
     }
+  })
+
+  options.onControl?.({
+    steer: (message) =>
+      agent.steer({ role: "user", content: message, timestamp: Date.now() }),
+    followUp: (message) =>
+      agent.followUp({ role: "user", content: message, timestamp: Date.now() }),
+    abort: () => agent.abort(),
   })
 
   await agent.prompt(prompt)

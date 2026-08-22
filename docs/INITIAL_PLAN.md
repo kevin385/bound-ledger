@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 12 complete — the next phase is not yet documented.
+**Current phase:** Phase 13 complete — the next phase is not yet documented.
 
 ## Purpose
 
@@ -815,6 +815,151 @@ replacement through the post contract, structured settlement evidence, and a
 deterministic CLI demonstration. Agent and guest-code projections remain on the
 legacy catalog.
 
+## Phase 13 — Add the general-ledger Pi tool-mode baseline
+
+Project the earned general-ledger catalog into Pi Agent Core without changing
+the code-mode SDK or granting the model trusted confirmation authority. This
+phase establishes the tool-mode baseline that later general-ledger code-mode
+work must match.
+
+### Visible tool catalog
+
+Add a separate tool projection for exactly these capabilities:
+
+```text
+accounts.list          -> accounts_list
+events.get             -> events_get
+events.query           -> events_query
+reports.balance        -> reports_balance
+reports.activity       -> reports_activity
+reports.trial_balance  -> reports_trial_balance
+events.post            -> events_post
+events.reverse         -> events_reverse
+```
+
+Every tool uses a closed TypeBox input schema and sequential execution. The
+projection forwards decoded model arguments to the common capability gateway;
+it owns no ledger validation, authorization, confirmation state, or domain
+behavior. Only capabilities present in the supplied gateway are projected.
+
+Keep the existing legacy transaction and code-mode projections intact. Agent
+runs select the legacy `tool`, `general_ledger`, or `code` mode explicitly; the
+default remains legacy `tool` mode during this phase.
+
+### Confirmation presentation
+
+- A successful read returns a structured `succeeded` tool result with the
+  capability output.
+- `events.post` and `events.reverse` return a structured
+  `confirmation_required` tool result containing the immutable confirmation
+  request produced by the gateway.
+- A pending confirmation is not reported as an executed mutation and remains
+  visible through the gateway attempt log.
+- `confirm` and `reject` are application controls. They are never Pi tools and
+  are not described as model-callable operations in the system prompt.
+- Tool cancellation propagates Pi's abort signal into the gateway Effect.
+
+### Agent controls and trace
+
+Keep one Pi Agent Core loop per run and sequential outer-tool execution. Expose
+only a narrow run control to the composition root:
+
+- queue one steering message;
+- queue one follow-up message;
+- abort the active run.
+
+Continue translating streamed text and tool start/end lifecycle events into
+application-owned agent events. The deterministic composition root records the
+agent event stream beside the gateway's structured capability attempts; these
+two ordered records are the Phase 13 tool execution trace. Do not add a trace
+package until a second application consumer needs a shared trace vocabulary.
+
+### Deterministic reconciliation task
+
+Add one API-key-free faux-provider conversation for this exact request:
+
+> Reconcile July 2026. Report the posted event count, expense total in minor
+> units, and whether the trial balance is zero at the start of August.
+
+The faux model calls `events.query`, `reports.activity`, and
+`reports.trial_balance` in one assistant turn. Pi executes them sequentially
+through the real general-ledger gateway and the model produces this stable
+answer from tool results:
+
+```text
+July 2026 reconciled: 4 posted events, 6249 expense minor units, trial balance zero: yes.
+```
+
+The CLI prints the prompt, assistant answer, ordered agent events, and ordered
+capability attempts.
+
+### Required tests and evidence
+
+- The general-ledger projection exposes exactly the eight named tools, all as
+  sequential tools with closed parameter schemas.
+- Each projected read reaches its matching capability through the common
+  gateway and returns a structured successful result.
+- A projected mutation returns the exact safe pending confirmation request,
+  appends no event, and exposes no approve or reject tool.
+- The deterministic reconciliation completes through Pi Agent Core and the
+  real kernel/gateway without an API key, with three sequential calls and the
+  exact stable answer.
+- Agent tool lifecycle events and capability attempts preserve call order.
+- A queued steering message is observed by the next model turn.
+- Aborting a run produces an aborted result and does not leave the agent
+  running.
+- The legacy tool projection, code-mode proof, paired July evaluation, direct
+  general-ledger reads, and confirmation demo remain unchanged and passing.
+
+### Expected files
+
+```text
+packages/pi-adapter/src/agent.ts
+packages/pi-adapter/src/general-ledger-tools.ts
+packages/pi-adapter/src/general-ledger-tools.test.ts
+packages/pi-adapter/src/index.ts
+apps/cli/src/reconcile-general-ledger.ts
+apps/cli/package.json
+package.json
+README.md
+```
+
+### Non-goals
+
+- No model-callable confirmation approval or rejection.
+- No automatic confirmation, durable continuation, confirmation expiry, or
+  instruction-level suspension.
+- No change to the general-ledger capability implementations or kernel rules.
+- No general-ledger code-mode SDK, discovery migration, or projection
+  equivalence evaluation yet.
+- No removal of the legacy transaction catalog, legacy CLI, or paired July
+  evaluation.
+- No persistence, ingestion, interest policy, UI, deployment, or new workspace
+  package.
+
+### Verification
+
+```sh
+pnpm check
+pnpm start
+pnpm demo:ledger-read
+pnpm demo:ledger-confirmation
+pnpm demo:ledger-agent
+pnpm eval:july-list
+```
+
+**Exit condition:** the exact general-ledger catalog runs as sequential Pi
+tools; pending confirmation is presented without exposing trusted controls; a
+deterministic multi-tool reconciliation produces ordered agent and capability
+evidence; steering and cancellation are proven; and every prior direct,
+agent, code-mode, sandbox, and evaluation check remains passing.
+
+Phase 13 added the separate eight-tool general-ledger projection, structured
+successful and pending-confirmation tool results, narrow steering, follow-up,
+and abort controls, ordered agent/capability evidence, and an API-key-free July
+reconciliation through Pi Agent Core. Trusted approval and rejection remain
+gateway-only, while the legacy tool and code-mode projections remain unchanged.
+
 ## Packages that must earn their existence
 
 | Package | Add when |
@@ -831,8 +976,9 @@ legacy catalog.
 ## Immediate next task
 
 Document the next phase before changing code. The next likely boundary is the
-general-ledger Pi tool-mode baseline, including how pending confirmations are
-presented without projecting trusted approve/reject methods. Do not begin that
-migration, interest policies, ingestion, persistence, UI, or further code-mode
-work until its exact catalog, deterministic task, trace behavior, tests, and
-legacy-removal gates are written here.
+coherent human-application baseline from Milestone 3, including its smallest
+account dashboard, event journal, posting detail, proposal-review surface,
+trusted confirmation controls, deterministic reset behavior, and the package
+gate for adding a web application. Do not begin that work, general-ledger code
+mode, interest policies, ingestion, or persistence until its exact user flows,
+operations, tests, and exit condition are written here.

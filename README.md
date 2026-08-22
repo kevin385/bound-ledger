@@ -32,6 +32,7 @@ pnpm install
 pnpm start
 pnpm demo:ledger-read
 pnpm demo:ledger-confirmation
+pnpm demo:ledger-agent
 pnpm eval:july-list
 pnpm check
 ```
@@ -50,6 +51,11 @@ using an agent projection.
 rejects one pending post, then approves an exact post, reversal, and balanced
 replacement while printing their settled structured attempts. Confirmation is
 owned by the gateway runtime and is not exposed as an agent tool.
+`pnpm demo:ledger-agent` runs the deterministic general-ledger Pi tool-mode
+baseline. Three sequential tools reconcile July activity and the August-opening
+trial balance through the real gateway, then print the assistant answer beside
+ordered agent events and structured capability attempts. The faux provider
+requires no API key.
 `pnpm eval:july-list` runs the versioned July listing task once per mode from
 fresh fixture state, applies deterministic correctness and safety checks, and
 prints the paired metrics and comparison. The checked-in sample result is in
