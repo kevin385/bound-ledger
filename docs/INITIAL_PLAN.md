@@ -9,7 +9,8 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 13 complete — the next phase is not yet documented.
+**Current phase:** Phase 14 complete — the coherent human-application baseline
+is implemented and verified.
 
 ## Purpose
 
@@ -960,6 +961,211 @@ and abort controls, ordered agent/capability evidence, and an API-key-free July
 reconciliation through Pi Agent Core. Trusted approval and rejection remain
 gateway-only, while the legacy tool and code-mode projections remain unchanged.
 
+## Phase 14 — Build the coherent human-application baseline
+
+Add the first browser application only after the CLI has proved the common
+general-ledger boundary. The application must be useful without an agent and
+must not bypass the capability gateway for financial reads or mutations.
+
+### Workspace and runtime boundary
+
+Add one `apps/personal-ledger` workspace using TanStack Start with file-based
+TanStack Router routes, TanStack Query for server-state caching and invalidation,
+TanStack Form for decoded human mutation forms, and Astryx components and
+neutral theme tokens. Do not add a shared web, API, runtime, or UI package.
+
+The server owns one long-lived in-memory Effect runtime containing the fixture
+ledger, trusted session, and personal-ledger capability gateway. Browser input
+never supplies actor ID, ledger ID, readable accounts, mutable accounts, or
+confirmation authority. Typed TanStack Start server functions invoke named
+application methods; the browser is not given a generic capability or kernel
+endpoint. Same-origin server-function protections remain enabled.
+
+Use exact pinned React, TanStack, Astryx, Vite, and Playwright dependencies.
+Keep the application local-only and deterministic; no cloud deployment,
+authentication system, or database is introduced in this phase.
+
+### Personal-ledger capability catalog
+
+Add one application-earned read capability:
+
+```text
+proposals.query
+```
+
+It accepts a closed empty input, returns only readable proposals from the active
+ledger, and uses the same validation, trusted authorization, output decoding,
+and structured-attempt path as every other capability. Compose it with the
+existing eight-operation general-ledger catalog as a separate
+`personalLedgerCapabilities` catalog. Do not change the Phase 13 Pi tool
+projection or the legacy/code-mode catalogs.
+
+Proposal review is read-only in this phase. A proposal remains an immutable
+candidate with explicit assumptions and never affects balances. Do not invent
+proposal acceptance, rejection, status, or deletion semantics.
+
+### Server-function surface
+
+Expose only these typed application functions:
+
+```text
+getDashboard({ from, to, at })
+queryEvents({ from, to })
+getEvent({ eventId })
+queryProposals()
+getPendingConfirmations()
+getAttempts()
+requestExpense(input)
+requestReversal({ eventId, requestId })
+confirmMutation({ confirmationId })
+rejectMutation({ confirmationId })
+resetLedger()
+```
+
+The dashboard function composes `accounts.list`, `reports.activity`,
+`reports.balance`, and `reports.trial_balance` through the gateway. Event and
+proposal routes invoke their matching read capability.
+
+`requestExpense` accepts only a client request ID, effective ISO
+timestamp, positive safe-integer minor-unit amount, expense account ID, funding
+account ID, and non-empty note. The trusted server maps that narrow human form
+to one balanced USD `events.post` input with deterministic manual provenance.
+
+The reversal request accepts only an event ID and client request ID. It maps to
+`events.reverse`. Both mutation request functions return the exact pending
+confirmation request and append nothing.
+Confirmation accepts the route confirmation ID only; the caller cannot replace
+the stored capability input. Rejection and replay fail closed.
+
+Decode every server-function input before invoking the gateway, reject
+unexpected fields, and return small stable error codes without schema internals,
+raw request contents, or trusted context.
+
+### Human interface
+
+Build four connected surfaces in one responsive application:
+
+1. **Dashboard** — readable account balances, July expense total, posted-event
+   count, and zero/non-zero trial-balance status.
+2. **Event journal** — date-filtered events with kind, effective time, posting
+   count, amount, and visible reversal/replacement lineage.
+3. **Event detail** — postings, actor, effective/recorded times, provenance, and
+   lineage, plus a request-reversal action.
+4. **Review** — immutable proposals and assumptions, an expense request form,
+   pending confirmation previews, and trusted confirm/reject controls.
+
+The UI must clearly distinguish posted events, unposted proposals, pending
+confirmations, rejected requests, and completed mutations. It may format minor
+units for display, but displayed arithmetic is not authoritative and must come
+from kernel report output.
+
+Do not add the agent conversation, generated-code viewer, tool/code selector,
+comparative metrics, or trace inspector yet; those belong to the later visual
+comparison milestone.
+
+### Deterministic reset
+
+`resetLedger` is a trusted application control, not a capability. It
+disposes the current managed runtime and recreates it from the checked-in
+fixtures and trusted session. Reset must restore:
+
+- the original ten readable accounts;
+- events `evt_001` through `evt_010` only;
+- the original ambiguous proposal;
+- no pending confirmations;
+- a fresh structured-attempt log;
+- the July expense total of `6_249` minor units and zero trial balance at
+  `2026-08-01T00:00:00.000Z`.
+
+### Required tests and evidence
+
+- `proposals.query` rejects unexpected input, filters by trusted ledger/account
+  access, validates output, and records structured attempts.
+- Server integration tests prove every function uses the long-lived gateway,
+  rejects malformed input, and never exposes inaccessible ledger data.
+- The deterministic dashboard returns ten accounts, four July posted events,
+  `6_249` expense minor units, and a zero trial balance.
+- The journal and detail routes expose postings, provenance, and lineage.
+- The proposal is visible with its assumption and never changes report totals.
+- An expense request and reversal append nothing before confirmation.
+- Rejection appends nothing; confirmation appends exactly once; replay fails;
+  and structured attempts show the settled outcome.
+- Reset after confirmed mutations restores the exact fixture state and clears
+  confirmation and attempt state.
+- A deterministic browser scenario covers dashboard, journal/detail, proposal
+  review, rejected expense, confirmed expense, confirmed reversal, and reset.
+- The responsive application is visually inspected at desktop and narrow
+  viewport sizes.
+- Every Phase 1–13 CLI, agent, code-mode, evaluation, and sandbox check remains
+  passing.
+
+### Expected files
+
+```text
+apps/personal-ledger/
+  package.json
+  tsconfig.json
+  vite.config.ts
+  playwright.config.ts
+  src/
+    router.tsx
+    routeTree.gen.ts
+    routes/__root.tsx
+    routes/index.tsx
+    ledger/application.server.ts
+    ledger/functions.ts
+    ledger/contracts.ts
+    server.test.ts
+    styles.css
+  e2e/personal-ledger.spec.ts
+packages/capability/src/general-ledger-capabilities.ts
+packages/capability/src/general-ledger-capabilities.test.ts
+packages/capability/src/gateway.ts
+packages/capability/src/index.ts
+pnpm-workspace.yaml
+package.json
+README.md
+.github/workflows/ci.yml
+```
+
+### Non-goals
+
+- No agent conversation UI, tool/code selector, generated program, trace
+  inspector, or comparative metrics.
+- No proposal lifecycle mutation or automatic proposal posting.
+- No generic browser capability endpoint and no browser-owned trusted context.
+- No persistence, migrations, authentication, multiple interactive users,
+  cloud deployment, or production-security claim.
+- No ingestion, interest policy, multi-currency, valuation, or new shared
+  package.
+- No general-ledger code-mode migration or legacy-catalog removal.
+
+### Verification
+
+```sh
+pnpm check
+pnpm build:personal-ledger
+pnpm test:e2e
+pnpm start
+pnpm demo:ledger-read
+pnpm demo:ledger-confirmation
+pnpm demo:ledger-agent
+pnpm eval:july-list
+```
+
+**Exit condition:** a reviewer can run the local application, inspect the
+fixture ledger and proposal, request and explicitly confirm or reject exact
+expense/reversal inputs, and reset to identical fixture state; every financial
+operation crosses the application-owned capability gateway; deterministic API
+and browser evidence passes; and every prior repository check remains green.
+
+Phase 14 added the TanStack Start personal-ledger application, Astryx-based
+dashboard, journal, detail, and proposal-review surfaces, trusted expense and
+reversal confirmation controls, deterministic reset behavior, and browser and
+server integration evidence. The application keeps financial reads and
+mutations behind the personal-ledger capability gateway and leaves the legacy
+code-mode catalog unchanged.
+
 ## Packages that must earn their existence
 
 | Package | Add when |
@@ -975,10 +1181,11 @@ gateway-only, while the legacy tool and code-mode projections remain unchanged.
 
 ## Immediate next task
 
-Document the next phase before changing code. The next likely boundary is the
-coherent human-application baseline from Milestone 3, including its smallest
-account dashboard, event journal, posting detail, proposal-review surface,
-trusted confirmation controls, deterministic reset behavior, and the package
-gate for adding a web application. Do not begin that work, general-ledger code
-mode, interest policies, ingestion, or persistence until its exact user flows,
-operations, tests, and exit condition are written here.
+Document Phase 15 before changing code. The next boundary is the controlled
+general-ledger code-mode migration from Milestone 4: regenerate the bounded app
+proxy and compact declarations for the earned general-ledger catalog, add
+capability discovery, route every guest SDK call through the gateway, replace
+the legacy July-list evaluation, and re-run projection, sandbox, and resource
+limit evidence. Do not remove the legacy transaction surface or begin the
+visual comparison UI until the successor catalog, equivalence tests, migration
+criteria, and exit condition are written here.

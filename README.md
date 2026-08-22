@@ -4,14 +4,16 @@ Bound Ledger explores a simple idea: application-owned operations should
 remain the authority whether an AI invokes them as tools or through generated
 code.
 
-The repository is deliberately a small Effect v4 monorepo with deterministic
-Pi Agent Core and controlled code-mode paths. Generated code runs in a fresh
+The repository is deliberately a small Effect v4 monorepo with a TanStack Start
+personal-ledger application, deterministic Pi Agent Core, and controlled
+code-mode paths. Generated code runs in a fresh
 QuickJS-WASM runtime inside a disposable subprocess and can reach ledger
 behavior only through the same capability gateway as tool mode. This remains a
 local research proof, not a production sandbox or framework.
 
 ```text
 apps/cli          runnable composition root
+apps/personal-ledger Astryx browser application and trusted server functions
 packages/capability validated and authorized invocation boundary
 packages/code-mode bounded guest SDK and subprocess execution bridge
 packages/ledger   ledger domain and legacy transaction proof
@@ -34,6 +36,7 @@ pnpm demo:ledger-read
 pnpm demo:ledger-confirmation
 pnpm demo:ledger-agent
 pnpm eval:july-list
+pnpm dev:personal-ledger
 pnpm check
 ```
 
@@ -60,6 +63,13 @@ requires no API key.
 fresh fixture state, applies deterministic correctness and safety checks, and
 prints the paired metrics and comparison. The checked-in sample result is in
 [`evals/results/july-list-v1.md`](evals/results/july-list-v1.md).
+`pnpm dev:personal-ledger` starts the local TanStack Start application. Its
+dashboard, event journal/detail, immutable proposal review, expense/reversal
+confirmation controls, and deterministic reset all use the same
+application-owned capability gateway. The responsive interface uses Astryx's
+neutral theme; TanStack Router, Query, and Form own navigation, server state,
+and human mutation forms. Use only the checked-in fixture data; this remains a
+local research application.
 `pnpm check` typechecks and tests every workspace.
 `pnpm test:sandbox` runs the pinned QuickJS-WASM and `isolated-vm` escape and
 resource-limit comparison in disposable child processes.

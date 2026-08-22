@@ -1,7 +1,11 @@
 node_modules/
 .pnpm-store
 dist/
+.output/
 coverage/
+playwright-report/
+test-results/
+.playwright-browsers/
 .env
 .env.*
 !.env.example
