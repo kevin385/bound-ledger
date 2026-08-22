@@ -7,8 +7,11 @@ import {
   FinancialEventSchema,
   KernelAuthorizationError,
   LedgerAccountListSchema,
+  PostEventInputSchema,
+  ReverseEventInputSchema,
   TrialBalanceSchema,
   type KernelOperation,
+  type Posting,
 } from "@bound/ledger"
 
 import {
@@ -72,6 +75,45 @@ const authorizeActiveLedger = (
         }),
       )
     : Effect.void
+
+const authorizeMutableAccounts = (
+  operation: "events.post" | "events.reverse",
+  postings: ReadonlyArray<Posting>,
+  runtime: CapabilityRuntime,
+) =>
+  Effect.gen(function* () {
+    const ledgerId = runtime.session.activeLedgerId
+
+    if (ledgerId === undefined) {
+      return yield* new KernelAuthorizationError({
+        actorId: runtime.session.actorId,
+        operation,
+        reason: "ledger_access_denied",
+      })
+    }
+
+    for (const posting of postings) {
+      if (!runtime.session.readableAccountIds.has(posting.accountId)) {
+        return yield* new KernelAuthorizationError({
+          actorId: runtime.session.actorId,
+          operation,
+          reason: "account_read_denied",
+          ledgerId,
+          accountId: posting.accountId,
+        })
+      }
+
+      if (!runtime.session.mutableAccountIds.has(posting.accountId)) {
+        return yield* new KernelAuthorizationError({
+          actorId: runtime.session.actorId,
+          operation,
+          reason: "account_mutation_denied",
+          ledgerId,
+          accountId: posting.accountId,
+        })
+      }
+    }
+  })
 
 export const generalLedgerReadCapabilities: ReadonlyArray<CapabilityDefinition> =
   Object.freeze([
@@ -138,4 +180,43 @@ export const generalLedgerReadCapabilities: ReadonlyArray<CapabilityDefinition> 
         authorizeActiveLedger("reports.trial_balance", runtime),
       execute: (input, { kernel }) => kernel.trialBalanceAt(input.at),
     }),
+  ])
+
+export const generalLedgerMutationCapabilities: ReadonlyArray<CapabilityDefinition> =
+  Object.freeze([
+    defineCapability({
+      name: "events.post",
+      description: "Post one approved balanced financial event",
+      kind: "mutation",
+      agentAccess: "confirmation_required",
+      input: PostEventInputSchema,
+      output: Schema.toType(FinancialEventSchema),
+      authorize: (input, runtime) =>
+        authorizeMutableAccounts("events.post", input.postings, runtime),
+      execute: (input, { kernel }) => kernel.postEvent(input),
+    }),
+    defineCapability({
+      name: "events.reverse",
+      description: "Append an approved exact reversal of one posted event",
+      kind: "mutation",
+      agentAccess: "confirmation_required",
+      input: ReverseEventInputSchema,
+      output: Schema.toType(FinancialEventSchema),
+      authorize: (input, runtime) =>
+        Effect.gen(function* () {
+          const event = yield* runtime.kernel.getEvent(input.eventId)
+          yield* authorizeMutableAccounts(
+            "events.reverse",
+            event.postings,
+            runtime,
+          )
+        }),
+      execute: (input, { kernel }) => kernel.reverseEvent(input),
+    }),
+  ])
+
+export const generalLedgerCapabilities: ReadonlyArray<CapabilityDefinition> =
+  Object.freeze([
+    ...generalLedgerReadCapabilities,
+    ...generalLedgerMutationCapabilities,
   ])

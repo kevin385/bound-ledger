@@ -9,7 +9,7 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 11 complete — the next phase is not yet documented.
+**Current phase:** Phase 12 complete — the next phase is not yet documented.
 
 ## Purpose
 
@@ -706,6 +706,115 @@ listing, decoded UTC report inputs, validated domain outputs, direct gateway
 coverage, and deterministic CLI evidence. The default agent catalog remains the
 legacy transaction slice, and its paired evaluation continues to pass unchanged.
 
+## Phase 12 — Add confirmation-bound general-ledger mutations
+
+Add the smallest trusted confirmation boundary needed to expose kernel
+mutations without granting the model or an ordinary capability caller direct
+mutation authority.
+
+### Capability surface
+
+Add only these mutation capabilities to the separate general-ledger catalog:
+
+```text
+events.post
+events.reverse
+```
+
+A corrected replacement uses `events.post` with balanced postings and a typed
+`replaces` lineage link. Do not add a second replacement implementation.
+
+Both definitions are mutations with `confirmation_required` agent access.
+Calling either through ordinary `invoke` decodes and authorizes the exact input,
+records a pending attempt, and returns a typed confirmation request without
+executing the kernel mutation.
+
+### Confirmation contract
+
+- Pending confirmation state is owned by the gateway runtime and kept in
+  memory for this phase.
+- A request binds one application-owned confirmation ID to the capability name,
+  decoded input, trusted actor ID, and active ledger ID.
+- The displayed request contains an immutable serialized preview, never the
+  mutable object retained for later execution.
+- Approval and rejection are trusted gateway methods, not capabilities and not
+  projected as model tools or guest SDK calls.
+- Approval accepts only the confirmation ID. The gateway executes the stored
+  capability and stored decoded input; the caller cannot provide replacement
+  arguments.
+- Approval consumes the pending request atomically, rechecks trusted context and
+  capability authorization, executes once, validates output, and settles the
+  structured attempt.
+- Rejection consumes the pending request, settles it as rejected, and performs
+  no domain mutation.
+- A consumed, unknown, or replayed confirmation ID fails closed.
+- Confirmation does not weaken kernel validation, account permissions,
+  idempotency, provenance, balance, lineage, or append-only behavior.
+
+### Required tests and evidence
+
+- Unconfirmed and rejected posting/reversal requests append nothing.
+- Approval posts the exact decoded event and uses trusted actor, ledger, and
+  recorded time.
+- Approval cannot be reused and cannot authorize a separately proposed input.
+- Authorization is evaluated when the request is created and again immediately
+  before execution.
+- Missing ledger authority, inaccessible accounts, invalid postings, duplicate
+  idempotency keys, and invalid reversal targets fail without partial state.
+- An approved reversal exactly negates the original event and keeps lineage.
+- An approved balanced replacement can follow a reversal and links to the
+  original event without rewriting history.
+- Pending, approved, rejected, refused, and failed outcomes remain inspectable
+  through structured capability attempts without raw source contents.
+- One deterministic CLI command demonstrates pending, rejected, approved post,
+  approved reversal, and approved replacement behavior.
+- All Phase 11 reads and the legacy tool/code evaluation remain unchanged and
+  passing.
+
+### Expected files
+
+```text
+packages/capability/src/capability.ts
+packages/capability/src/gateway.ts
+packages/capability/src/general-ledger-capabilities.ts
+packages/capability/src/confirmation.test.ts
+packages/capability/src/index.ts
+apps/cli/src/confirm-general-ledger.ts
+```
+
+### Non-goals
+
+- No proposal mutation capability or arbitrary lineage/link mutation.
+- No durable confirmation storage, expiry policy, distributed continuation, or
+  instruction-level sandbox suspension.
+- No Pi prompt, tool projection, generated SDK, or code-mode continuation
+  change.
+- No removal or extension of the legacy transaction catalog.
+- No persistence, ingestion, interest, UI, deployment, or new workspace
+  package.
+
+### Verification
+
+```sh
+pnpm check
+pnpm start
+pnpm demo:ledger-read
+pnpm demo:ledger-confirmation
+pnpm eval:july-list
+```
+
+**Exit condition:** posting, reversal, and replacement can occur only after a
+trusted, exact-input-bound confirmation; rejection and replay produce no state
+change; confirmation attempts are structured and inspectable; and every prior
+read, sandbox, agent, and evaluation check remains passing.
+
+Phase 12 added runtime-owned, single-use confirmation IDs, immutable serialized
+previews, private decoded inputs, trusted context binding, authorization recheck,
+atomic approval/rejection, confirmed posting and reversal capabilities, linked
+replacement through the post contract, structured settlement evidence, and a
+deterministic CLI demonstration. Agent and guest-code projections remain on the
+legacy catalog.
+
 ## Packages that must earn their existence
 
 | Package | Add when |
@@ -721,8 +830,9 @@ legacy transaction slice, and its paired evaluation continues to pass unchanged.
 
 ## Immediate next task
 
-Document the next phase before changing code. The next likely boundary is
-confirmation-bound general-ledger mutations, but its authority model, approval
-binding, smallest capability surface, tests, and legacy-removal gates must be
-written here before implementation. Do not begin agent projection migration,
-interest policies, ingestion, persistence, UI, or further code-mode work early.
+Document the next phase before changing code. The next likely boundary is the
+general-ledger Pi tool-mode baseline, including how pending confirmations are
+presented without projecting trusted approve/reject methods. Do not begin that
+migration, interest policies, ingestion, persistence, UI, or further code-mode
+work until its exact catalog, deterministic task, trace behavior, tests, and
+legacy-removal gates are written here.
