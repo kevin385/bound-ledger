@@ -67,6 +67,13 @@ function Navigation() {
           isSelected={pathname === "/review"}
         />
       </SideNavSection>
+      <SideNavSection title="Research">
+        <SideNavItem
+          label="Mode comparison"
+          href="/comparison"
+          isSelected={pathname === "/comparison"}
+        />
+      </SideNavSection>
     </SideNav>
   )
 }

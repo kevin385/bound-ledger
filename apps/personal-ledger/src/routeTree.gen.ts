@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ComparisonRouteImport } from './routes/comparison'
 import { Route as JournalRouteImport } from './routes/journal'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as JournalEventIdRouteImport } from './routes/journal_.$eventId'
@@ -17,6 +18,11 @@ import { Route as JournalEventIdRouteImport } from './routes/journal_.$eventId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComparisonRoute = ComparisonRouteImport.update({
+  id: '/comparison',
+  path: '/comparison',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JournalRoute = JournalRouteImport.update({
@@ -37,12 +43,14 @@ const JournalEventIdRoute = JournalEventIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/comparison': typeof ComparisonRoute
   '/journal': typeof JournalRoute
   '/review': typeof ReviewRoute
   '/journal/$eventId': typeof JournalEventIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/comparison': typeof ComparisonRoute
   '/journal': typeof JournalRoute
   '/review': typeof ReviewRoute
   '/journal/$eventId': typeof JournalEventIdRoute
@@ -50,20 +58,28 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/comparison': typeof ComparisonRoute
   '/journal': typeof JournalRoute
   '/review': typeof ReviewRoute
   '/journal_/$eventId': typeof JournalEventIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/journal' | '/review' | '/journal/$eventId'
+  fullPaths: '/' | '/comparison' | '/journal' | '/review' | '/journal/$eventId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/journal' | '/review' | '/journal/$eventId'
-  id: '__root__' | '/' | '/journal' | '/review' | '/journal_/$eventId'
+  to: '/' | '/comparison' | '/journal' | '/review' | '/journal/$eventId'
+  id:
+    | '__root__'
+    | '/'
+    | '/comparison'
+    | '/journal'
+    | '/review'
+    | '/journal_/$eventId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ComparisonRoute: typeof ComparisonRoute
   JournalRoute: typeof JournalRoute
   ReviewRoute: typeof ReviewRoute
   JournalEventIdRoute: typeof JournalEventIdRoute
@@ -76,6 +92,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comparison': {
+      id: '/comparison'
+      path: '/comparison'
+      fullPath: '/comparison'
+      preLoaderRoute: typeof ComparisonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/journal': {
@@ -104,6 +127,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ComparisonRoute: ComparisonRoute,
   JournalRoute: JournalRoute,
   ReviewRoute: ReviewRoute,
   JournalEventIdRoute: JournalEventIdRoute,

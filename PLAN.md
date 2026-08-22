@@ -10,7 +10,7 @@ implementation work.
 The product and repository are named **Bound Ledger**. Workspace packages keep
 the `@bound/*` namespace.
 
-Implementation status: Phase 15 is complete; Phase 16 is fully specified in
+Implementation status: Phase 16 is complete; Phase 17 is fully specified in
 `docs/INITIAL_PLAN.md` and is the next code boundary.
 
 > Let agents code inside your application—without coding around its rules.
@@ -1206,7 +1206,8 @@ capability boundary, controlled code-mode proof, and first paired evaluation.
 Phases 10–14 added the general-ledger kernel, read and confirmation-bound
 capabilities, Pi tool-mode baseline, and coherent human application. Phase 15
 migrated discovery, the generated guest SDK, confirmation termination, and the
-paired evaluation to the earned general-ledger catalog. Phase 16 is the next
-planned boundary: make that deterministic evidence visually inspectable in a
-read-only comparison workbench before persistence, ingestion, provider choice,
-or product expansion.
+paired evaluation to the earned general-ledger catalog. Phase 16 made that
+deterministic evidence visually inspectable through one bounded, redacted,
+read-only comparison workbench. Phase 17 is the next planned boundary: broaden
+the deterministic comparison to five versioned tasks before persistence,
+ingestion, provider choice, or product expansion.

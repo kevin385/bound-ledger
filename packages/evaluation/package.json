@@ -1,22 +1,19 @@
 {
-  "name": "@bound/cli",
+  "name": "@bound/evaluation",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./task": "./src/task.ts"
+  },
   "scripts": {
-    "dev": "node --watch src/main.ts",
-    "start": "node src/main.ts",
-    "demo:ledger-read": "node src/read-general-ledger.ts",
-    "demo:ledger-confirmation": "node src/confirm-general-ledger.ts",
-    "demo:ledger-agent": "node src/reconcile-general-ledger.ts",
-    "eval:general-ledger": "node src/evaluate-general-ledger.ts",
     "test": "node --test src/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@bound/capability": "workspace:*",
     "@bound/code-mode": "workspace:*",
-    "@bound/evaluation": "workspace:*",
     "@bound/ledger": "workspace:*",
     "@bound/pi-adapter": "workspace:*",
     "@earendil-works/pi-ai": "catalog:",

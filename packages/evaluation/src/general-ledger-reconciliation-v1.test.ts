@@ -2,12 +2,12 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import {
-  GENERAL_LEDGER_RECONCILIATION_TASK_V1,
   assertReconciliationEvaluation,
   compareReconciliationResults,
   runGeneralLedgerReconciliationEvaluation,
   scoreReconciliationMode,
 } from "./general-ledger-reconciliation-v1.ts"
+import { GENERAL_LEDGER_RECONCILIATION_TASK_V1 } from "./task.ts"
 
 test("general-ledger reconciliation v1 produces exact paired evidence", async () => {
   const summary = await runGeneralLedgerReconciliationEvaluation()

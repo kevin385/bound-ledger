@@ -11,9 +11,10 @@ Phase 6 evaluated runtimes. Phase 7 added the controlled local proof in
 `packages/code-mode`; it remains unsuitable for real untrusted workloads.
 Phase 15 replaced the hardcoded legacy proxy with one validated,
 gateway-filtered general-ledger manifest and made confirmation-required
-termination explicit. The executable evidence named below verifies those
-properties for the pinned local implementation; it does not make the sandbox
-production-grade.
+termination explicit. Phase 16 added a read-only server projection of the
+canonical paired evidence; it did not expose a new sandbox or confirmation
+entry point. The executable evidence named below verifies those properties for
+the pinned local implementation; it does not make the sandbox production-grade.
 
 ## Assets and trust boundaries
 
@@ -120,6 +121,28 @@ The general-ledger implementation preserves these additional properties:
 The manifest, bridge, Pi adapter, and paired mutation tests are the executable
 evidence for this contract. Future changes must keep them passing or update the
 threat model before changing the boundary.
+
+## Phase 16 visual projection contract
+
+The `/comparison` route does not accept a prompt, generated program, actor,
+workspace, ledger, account permission, capability name, or confirmation
+decision. Its closed POST server function creates fresh deterministic fixture,
+gateway, provider, and sandbox state, runs the canonical shared evaluation, and
+then projects only the browser view model.
+
+The projection removes actor and resource identifiers, decoded capability
+inputs, permission sets, raw schemas, provider messages, environment values,
+host errors, and confirmation controls. It admits only completed authorized
+read attempts and refuses output over 64 KiB. A failed run produces a stable
+`internal_error` result, and the browser clears the result area rather than
+showing stale or false passing evidence. The generated program is the fixed
+checked-in evaluation program and is displayed read-only; it is never received
+from the browser.
+
+These properties reduce disclosure from the visual workbench, but they do not
+turn its local deterministic server into a multi-user or production trust
+boundary. Authentication, tenant isolation, hostile-input handling, and real
+financial data remain out of scope.
 
 ## Executable evidence
 
