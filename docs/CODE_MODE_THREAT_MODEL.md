@@ -2,12 +2,18 @@
 
 ## Status and scope
 
-This threat model covers the proposed execution of model-generated JavaScript
-inside Bound Ledger. It is evidence for an experimental local proof, not a
-claim that the repository has a production security boundary.
+This threat model covers execution of model-generated JavaScript inside Bound
+Ledger. The current implementation is an experimental local proof over the
+bounded general-ledger catalog, not a claim that the repository has a
+production security boundary.
 
-Phase 6 evaluated runtimes. Phase 7 adds the controlled local proof in
+Phase 6 evaluated runtimes. Phase 7 added the controlled local proof in
 `packages/code-mode`; it remains unsuitable for real untrusted workloads.
+Phase 15 replaced the hardcoded legacy proxy with one validated,
+gateway-filtered general-ledger manifest and made confirmation-required
+termination explicit. The executable evidence named below verifies those
+properties for the pinned local implementation; it does not make the sandbox
+production-grade.
 
 ## Assets and trust boundaries
 
@@ -57,6 +63,12 @@ Also assume the chosen interpreter, its WebAssembly host, and the surrounding
 Node process may contain bugs. Language-level global removal alone is not an
 adequate isolation boundary.
 
+For the Phase 15 manifest migration, additionally assume generated input tries
+to influence SDK method names, install an undeclared capability, create a
+prototype path, make discovery disagree with the runtime proxy, catch a pending
+confirmation and continue, or replay a mutation after the guest should have
+stopped.
+
 ## Required sandbox contract
 
 Only deliberately installed deterministic helpers and the generated `app`
@@ -82,6 +94,33 @@ request-depth budgets in the parent. Its abort signal terminates the child and
 interrupts a pending gateway Effect. The gateway still decodes and authorizes
 every individual request.
 
+## Phase 15 manifest and confirmation contract
+
+The general-ledger implementation preserves these additional properties:
+
+- one immutable host-owned manifest generates both progressive discovery and
+  the installed guest proxy;
+- the manifest is intersected with gateway metadata, and missing, duplicate,
+  invalid-path, or kind-mismatched entries fail before worker creation;
+- neither the model nor guest program supplies proxy paths, capability names,
+  declarations, agent-access values, or source fragments;
+- generated proxy source or descriptors remain subject to the program/protocol
+  size limits before crossing into the child;
+- capability discovery exposes no trusted session, hidden capability, raw
+  schema representation, pending-confirmation control, or application object;
+- confirmation-required gateway results terminate the child at the parent
+  boundary before guest `catch`, retry, or later statements can run;
+- the returned pending preview is the gateway's immutable safe preview, and
+  approval/rejection remains outside discovery, the proxy, and Pi tools;
+- pending and refused requests still count against capability and mutation
+  budgets;
+- tests prove that discovery, declarations, serialized request names, and the
+  installed proxy cannot drift.
+
+The manifest, bridge, Pi adapter, and paired mutation tests are the executable
+evidence for this contract. Future changes must keep them passing or update the
+threat model before changing the boundary.
+
 ## Executable evidence
 
 [`experiments/sandbox/runtime-comparison.test.ts`](../experiments/sandbox/runtime-comparison.test.ts)
@@ -92,18 +131,18 @@ and 64 KiB program/result limits.
 
 Both QuickJS-WASM and `isolated-vm` currently pass the same 20 assertions:
 
-| Threat or policy | Executable result |
-| --- | --- |
-| Ambient host globals | All named globals absent |
-| Constructor escape | Cannot discover host `process` |
-| Indirect `eval` | Cannot discover host `process` |
-| Module loading | `node:fs` denied |
-| Infinite loop | Interpreter deadline terminates execution |
-| Large retained allocation | Interpreter memory limit terminates execution |
-| Output flood | Host rejects result over 64 KiB |
-| Oversized program | Host rejects program over 64 KiB before evaluation |
-| Function output | Host rejects non-serialized output |
-| Normal value | Deterministic JSON value crosses the boundary |
+| Threat or policy          | Executable result                                  |
+| ------------------------- | -------------------------------------------------- |
+| Ambient host globals      | All named globals absent                           |
+| Constructor escape        | Cannot discover host `process`                     |
+| Indirect `eval`           | Cannot discover host `process`                     |
+| Module loading            | `node:fs` denied                                   |
+| Infinite loop             | Interpreter deadline terminates execution          |
+| Large retained allocation | Interpreter memory limit terminates execution      |
+| Output flood              | Host rejects result over 64 KiB                    |
+| Oversized program         | Host rejects program over 64 KiB before evaluation |
+| Function output           | Host rejects non-serialized output                 |
+| Normal value              | Deterministic JSON value crosses the boundary      |
 
 Run the evidence with:
 
@@ -114,22 +153,36 @@ pnpm test:sandbox
 These probes demonstrate current behavior of pinned dependencies. They do not
 prove the absence of engine or host vulnerabilities.
 
+[`packages/code-mode/src/manifest.test.ts`](../packages/code-mode/src/manifest.test.ts)
+verifies the exact eight-operation catalog, gateway filtering, immutable
+discovery, invalid and duplicate path rejection, metadata drift rejection, and
+the absence of the legacy transaction namespace.
+
 [`packages/code-mode/src/code-mode.test.ts`](../packages/code-mode/src/code-mode.test.ts)
-adds executable bridge evidence. It verifies tool/code result and attempt
-equivalence, fresh-runtime state, host-global isolation, call and mutation
-budgets, request-depth enforcement, dynamic re-authorization, abort during a
-pending gateway call, inert request-shaped output, inaccessible resource
-refusal, serializable output, and program/result/deadline limits.
+adds executable bridge evidence. It verifies all six reads, pending post and
+reversal termination, tool/code result and attempt equivalence, fresh-runtime
+state, host-global isolation, call and mutation budgets, request-depth
+enforcement, dynamic re-authorization, abort during a pending gateway call,
+inert request-shaped output, inaccessible resource refusal, serializable
+output, and program/result/deadline limits.
+
+[`packages/pi-adapter/src/pi-adapter.test.ts`](../packages/pi-adapter/src/pi-adapter.test.ts)
+verifies exactly two code-mode tools, non-invoking progressive discovery,
+paired read equivalence, and equivalent pending mutation previews with no
+append. The versioned CLI evaluation separately records the canonical
+read-only comparison.
 
 The bridge exposes a pure guest-side generator SDK. SDK calls yield serialized
 requests; the parent invokes the gateway and resumes the same generator with a
 serialized response. No host callback or object is installed in QuickJS.
 
-Phase 8 exposes this boundary to Pi as exactly one sequential `execute_code`
-tool. The mandatory generator guide is derived from immutable metadata on the
-configured gateway plus frozen, validated code-mode defaults. Invalid custom
-limits fail before a child process is created. Direct tool mode remains a
-separate projection over the same gateway; neither projection owns authority.
+Phase 15 exposes this boundary to Pi as exactly two sequential tools:
+`inspect_capabilities` and `execute_code`. Discovery and the installed proxy
+come from the same immutable gateway-filtered manifest. The base guide contains
+syntax, confirmation behavior, and frozen validated defaults without eagerly
+embedding the catalog. Invalid custom limits or manifest drift fail before a
+child process is created. Direct tool mode remains a separate projection over
+the same gateway; neither projection owns authority.
 
 ## Residual risk and required follow-up
 

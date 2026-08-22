@@ -9,6 +9,7 @@ export type ParentMessage =
   | {
       readonly type: "start"
       readonly program: string
+      readonly sdkSource: string
       readonly limits: RuntimeLimits
     }
   | {
@@ -52,7 +53,9 @@ export const isWorkerMessage = (value: unknown): value is WorkerMessage => {
 
   const record = value as Record<string, unknown>
   if (record.type === "request") {
-    return typeof record.id === "number" && typeof record.serialized === "string"
+    return (
+      typeof record.id === "number" && typeof record.serialized === "string"
+    )
   }
   if (record.type === "result") return typeof record.serialized === "string"
   if (record.type !== "error") return false

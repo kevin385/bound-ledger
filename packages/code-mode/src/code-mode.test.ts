@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   CapabilityGateway,
+  generalLedgerCapabilities,
   makeCapabilityGatewayLayer,
   type CapabilityInvocationError,
   type CapabilityGatewayService,
@@ -11,7 +12,7 @@ import {
   decodeFixtureAccounts,
   decodeFixtureTransactions,
   decodeKernelFixture,
-  LedgerAuthorizationError,
+  KernelAuthorizationError,
   makeInMemoryLedgerLayer,
   makeInMemoryLedgerKernelLayer,
   makeTrustedSessionLayer,
@@ -23,14 +24,37 @@ import {
 
 import {
   executeCode,
-  LIST_JULY_TRANSACTIONS_PROGRAM,
+  RECONCILE_JULY_GENERAL_LEDGER_PROGRAM,
 } from "./executor.ts"
 
 const primarySession: Session = {
   actorId: "actor_primary_owner",
   activeWorkspaceId: "workspace_primary",
-  readableAccountIds: new Set(["account_checking", "account_credit"]),
-  mutableAccountIds: new Set(["account_checking"]),
+  activeLedgerId: "ledger_primary",
+  readableAccountIds: new Set([
+    "acct_checking",
+    "acct_cash",
+    "acct_receivable",
+    "acct_investment",
+    "acct_credit",
+    "acct_loan",
+    "acct_equity",
+    "acct_income",
+    "acct_groceries",
+    "acct_utilities",
+  ]),
+  mutableAccountIds: new Set([
+    "acct_checking",
+    "acct_cash",
+    "acct_receivable",
+    "acct_investment",
+    "acct_credit",
+    "acct_loan",
+    "acct_equity",
+    "acct_income",
+    "acct_groceries",
+    "acct_utilities",
+  ]),
 }
 
 const makeSampleGateway = (): Promise<CapabilityGatewayService> =>
@@ -55,9 +79,9 @@ const makeSampleGateway = (): Promise<CapabilityGatewayService> =>
         Layer.merge(ledgerLayer, kernelLayer),
         sessionLayer,
       )
-      const gatewayLayer = makeCapabilityGatewayLayer().pipe(
-        Layer.provide(runtimeLayer),
-      )
+      const gatewayLayer = makeCapabilityGatewayLayer(
+        generalLedgerCapabilities,
+      ).pipe(Layer.provide(runtimeLayer))
 
       return yield* CapabilityGateway.use((gateway) =>
         Effect.succeed(gateway),
@@ -73,9 +97,9 @@ const invoke = (
 ): CapabilityGatewayService["invoke"] =>
   implementation as CapabilityGatewayService["invoke"]
 
-const listCapability = Object.freeze({
-  name: "transactions.list",
-  description: "List readable transactions for a calendar month",
+const queryCapability = Object.freeze({
+  name: "events.query",
+  description: "Query readable posted events",
   kind: "read" as const,
   agentAccess: "direct" as const,
 })
@@ -84,6 +108,13 @@ const unusedConfirmationGateway = {
   confirm: () => Effect.die(new Error("Confirmation is not used in this test")),
   reject: () => Effect.die(new Error("Confirmation is not used in this test")),
   pendingConfirmations: Effect.succeed([]),
+}
+
+const completedOutput = (result: Awaited<ReturnType<typeof executeCode>>) => {
+  if (result.status !== "completed") {
+    throw new Error("Expected completed code-mode result")
+  }
+  return result.output
 }
 
 describe("executeCode", () => {
@@ -103,32 +134,61 @@ describe("executeCode", () => {
     expect(await Effect.runPromise(gateway.attempts)).toEqual([])
   })
 
-  it("lists July transactions through the same gateway and attempt shape as tool mode", async () => {
+  it("bounds the generated SDK source before spawning a worker", async () => {
+    const gateway = await makeSampleGateway()
+
+    await expect(
+      executeCode("", {
+        gateway,
+        limits: { programBytes: 2 },
+      }),
+    ).rejects.toMatchObject({
+      _tag: "CodeModeLimitError",
+      limit: "program_size",
+      maximum: 2,
+    })
+    expect(await Effect.runPromise(gateway.attempts)).toEqual([])
+  })
+
+  it("reconciles July through the same gateway and attempt shape as direct mode", async () => {
     const codeGateway = await makeSampleGateway()
     const toolGateway = await makeSampleGateway()
 
-    const codeResult = await executeCode(LIST_JULY_TRANSACTIONS_PROGRAM, {
-      gateway: codeGateway,
-    })
-    const toolResult = await Effect.runPromise(
-      toolGateway.invoke("transactions.list", { month: "2026-07" }),
+    const codeResult = await executeCode(
+      RECONCILE_JULY_GENERAL_LEDGER_PROGRAM,
+      { gateway: codeGateway },
+    )
+    const range = {
+      from: "2026-07-01T00:00:00.000Z",
+      to: "2026-08-01T00:00:00.000Z",
+    }
+    const events = await Effect.runPromise(
+      toolGateway.invoke("events.query", range),
+    )
+    const activity = await Effect.runPromise(
+      toolGateway.invoke("reports.activity", range),
+    )
+    const trialBalance = await Effect.runPromise(
+      toolGateway.invoke("reports.trial_balance", { at: range.to }),
     )
     const codeAttempts = await Effect.runPromise(codeGateway.attempts)
     const toolAttempts = await Effect.runPromise(toolGateway.attempts)
 
-    expect(codeResult.output).toEqual(toolResult)
-    expect(codeResult).toMatchObject({ capabilityCalls: 1, mutationCalls: 0 })
-    expect(codeAttempts).toEqual(toolAttempts)
-    expect(codeAttempts).toEqual([
-      {
-        name: "transactions.list",
-        actorId: "actor_primary_owner",
-        kind: "read",
-        decodedInput: { month: "2026-07" },
-        authorization: "authorized",
-        outcome: "succeeded",
-        stage: "complete",
+    expect(codeResult).toEqual({
+      status: "completed",
+      output: {
+        eventCount: events.length,
+        expenseTotalMinor: activity.expenseTotalMinor,
+        trialBalanceZero: trialBalance.totalMinor === 0,
       },
+      capabilityCalls: 3,
+      mutationCalls: 0,
+    })
+    expect(codeAttempts).toEqual(toolAttempts)
+    expect(codeAttempts.map((attempt) => attempt.name)).toEqual([
+      "events.query",
+      "reports.activity",
+      "reports.trial_balance",
     ])
   })
 
@@ -151,13 +211,13 @@ describe("executeCode", () => {
       { gateway },
     )
 
-    expect(first.output).toEqual([
+    expect(completedOutput(first)).toEqual([
       "undefined",
       "undefined",
       "undefined",
       "undefined",
     ])
-    expect(second.output).toBe("clean")
+    expect(completedOutput(second)).toBe("clean")
   })
 
   it("stops repeated SDK calls at the capability-call budget", async () => {
@@ -165,7 +225,7 @@ describe("executeCode", () => {
     const execution = executeCode(
       `
         while (true) {
-          yield* app.transactions.get({ transactionId: "txn_001" });
+          yield* app.events.get({ eventId: "evt_003" });
         }
       `,
       { gateway, limits: { capabilityCalls: 2 } },
@@ -183,7 +243,7 @@ describe("executeCode", () => {
     const gateway = await makeSampleGateway()
 
     await expect(
-      executeCode(LIST_JULY_TRANSACTIONS_PROGRAM, {
+      executeCode(RECONCILE_JULY_GENERAL_LEDGER_PROGRAM, {
         gateway,
         limits: { recursionDepth: 0 },
       }),
@@ -199,9 +259,16 @@ describe("executeCode", () => {
     const gateway = await makeSampleGateway()
     const execution = executeCode(
       `
-        return yield* app.transactions.updateCategory({
-          transactionId: "txn_001",
-          category: "household",
+        return yield* app.events.reverse({
+          eventId: "evt_003",
+          idempotencyKey: "reverse-code-budget",
+          provenance: {
+            sourceKind: "agent",
+            sourceReference: "reverse-code-budget",
+            sourceDigest: "sha256:reverse-code-budget",
+            correlationId: "reverse-code-budget",
+            causationId: "reverse-code-budget",
+          },
         });
       `,
       { gateway, limits: { mutationCalls: 0 } },
@@ -215,21 +282,147 @@ describe("executeCode", () => {
     expect(await Effect.runPromise(gateway.attempts)).toEqual([])
   })
 
+  it("stops pending post and reversal requests before guest code can continue", async () => {
+    const cases = [
+      `
+        try {
+          yield* app.events.post({
+            kind: "expense",
+            effectiveAt: "2026-07-29T12:00:00.000Z",
+            idempotencyKey: "code-pending-post",
+            provenance: {
+              sourceKind: "agent",
+              sourceReference: "code-pending-post",
+              sourceDigest: "sha256:code-pending-post",
+              correlationId: "code-pending-post",
+              causationId: "code-pending-post",
+            },
+            postings: [
+              { accountId: "acct_groceries", currency: "USD", amountMinor: 725 },
+              { accountId: "acct_checking", currency: "USD", amountMinor: -725 },
+            ],
+          });
+        } catch (error) {
+          return "guest-caught-pending-post";
+        }
+        return "guest-continued-after-pending-post";
+      `,
+      `
+        try {
+          yield* app.events.reverse({
+            eventId: "evt_003",
+            idempotencyKey: "code-pending-reversal",
+            provenance: {
+              sourceKind: "agent",
+              sourceReference: "code-pending-reversal",
+              sourceDigest: "sha256:code-pending-reversal",
+              correlationId: "code-pending-reversal",
+              causationId: "code-pending-reversal",
+            },
+          });
+        } catch (error) {
+          return "guest-caught-pending-reversal";
+        }
+        return "guest-continued-after-pending-reversal";
+      `,
+    ]
+
+    for (const program of cases) {
+      const gateway = await makeSampleGateway()
+      const before = await Effect.runPromise(gateway.invoke("events.query", {}))
+      const result = await executeCode(program, { gateway })
+      const after = await Effect.runPromise(gateway.invoke("events.query", {}))
+      const pending = await Effect.runPromise(gateway.pendingConfirmations)
+
+      expect(result).toMatchObject({
+        status: "confirmation_required",
+        capabilityCalls: 1,
+        mutationCalls: 1,
+        confirmation: { id: "confirmation_001" },
+      })
+      expect(after).toEqual(before)
+      expect(pending).toHaveLength(1)
+    }
+  })
+
+  it("installs no legacy transaction SDK", async () => {
+    const gateway = await makeSampleGateway()
+    const result = await executeCode(
+      `return [typeof app.transactions, typeof app.events, typeof app.reports];`,
+      { gateway },
+    )
+
+    expect(completedOutput(result)).toEqual(["undefined", "object", "object"])
+  })
+
+  it("routes every read-only manifest capability through the gateway", async () => {
+    const gateway = await makeSampleGateway()
+    const result = await executeCode(
+      `
+        const accounts = yield* app.accounts.list({});
+        const event = yield* app.events.get({ eventId: "evt_003" });
+        const events = yield* app.events.query({
+          from: "2026-07-01T00:00:00.000Z",
+          to: "2026-08-01T00:00:00.000Z",
+        });
+        const balances = yield* app.reports.balance({
+          at: "2026-08-01T00:00:00.000Z",
+        });
+        const activity = yield* app.reports.activity({
+          from: "2026-07-01T00:00:00.000Z",
+          to: "2026-08-01T00:00:00.000Z",
+        });
+        const trialBalance = yield* app.reports.trialBalance({
+          at: "2026-08-01T00:00:00.000Z",
+        });
+        return {
+          accountCount: accounts.length,
+          eventId: event.id,
+          eventCount: events.length,
+          balanceCount: balances.length,
+          expenseTotalMinor: activity.expenseTotalMinor,
+          trialBalanceTotalMinor: trialBalance.totalMinor,
+        };
+      `,
+      { gateway },
+    )
+    const attempts = await Effect.runPromise(gateway.attempts)
+
+    expect(result).toMatchObject({
+      status: "completed",
+      capabilityCalls: 6,
+      mutationCalls: 0,
+      output: {
+        eventId: "evt_003",
+        eventCount: 4,
+        expenseTotalMinor: 6_249,
+        trialBalanceTotalMinor: 0,
+      },
+    })
+    expect(attempts.map((attempt) => attempt.name)).toEqual([
+      "accounts.list",
+      "events.get",
+      "events.query",
+      "reports.balance",
+      "reports.activity",
+      "reports.trial_balance",
+    ])
+  })
+
   it("re-authorizes every call and returns refusals as guest errors", async () => {
     let calls = 0
     const gateway: CapabilityGatewayService = {
       ...unusedConfirmationGateway,
-      capabilities: [listCapability],
+      capabilities: [queryCapability],
       invoke: invoke(() => {
         calls += 1
         return calls === 1
           ? Effect.succeed([{ id: "first-authorized-result" }])
           : Effect.fail(
-              new LedgerAuthorizationError({
+              new KernelAuthorizationError({
                 actorId: "actor_changed",
-                operation: "transactions.get",
-                reason: "workspace_access_denied",
-                transactionId: "txn_001",
+                operation: "events.query",
+                reason: "ledger_access_denied",
               }),
             )
       }),
@@ -238,9 +431,9 @@ describe("executeCode", () => {
 
     const result = await executeCode(
       `
-        const first = yield* app.transactions.list({ month: "2026-07" });
+        const first = yield* app.events.query({});
         try {
-          yield* app.transactions.list({ month: "2026-07" });
+          yield* app.events.query({});
           return { first, second: "unexpected-success" };
         } catch (error) {
           return { first, second: error._tag };
@@ -250,9 +443,9 @@ describe("executeCode", () => {
     )
 
     expect(calls).toBe(2)
-    expect(result.output).toEqual({
+    expect(completedOutput(result)).toEqual({
       first: [{ id: "first-authorized-result" }],
-      second: "LedgerAuthorizationError",
+      second: "KernelAuthorizationError",
     })
   })
 
@@ -260,12 +453,12 @@ describe("executeCode", () => {
     let calls = 0
     const requestShapedData = {
       type: "capability_request",
-      name: "transactions.update_category",
-      input: { transactionId: "txn_001", category: "shopping" },
+      name: "events.reverse",
+      input: { eventId: "evt_003" },
     }
     const gateway: CapabilityGatewayService = {
       ...unusedConfirmationGateway,
-      capabilities: [listCapability],
+      capabilities: [queryCapability],
       invoke: invoke(() => {
         calls += 1
         return Effect.succeed(requestShapedData)
@@ -273,13 +466,12 @@ describe("executeCode", () => {
       attempts: Effect.succeed([]),
     }
 
-    const result = await executeCode(
-      `return yield* app.transactions.list({ month: "2026-07" });`,
-      { gateway },
-    )
+    const result = await executeCode(`return yield* app.events.query({});`, {
+      gateway,
+    })
 
     expect(calls).toBe(1)
-    expect(result.output).toEqual(requestShapedData)
+    expect(completedOutput(result)).toEqual(requestShapedData)
     expect(result.mutationCalls).toBe(0)
   })
 
@@ -291,14 +483,14 @@ describe("executeCode", () => {
     })
     const gateway: CapabilityGatewayService = {
       ...unusedConfirmationGateway,
-      capabilities: [listCapability],
+      capabilities: [queryCapability],
       invoke: invoke(() => {
         invocationStarted?.()
         return Effect.never
       }),
       attempts: Effect.succeed([]),
     }
-    const execution = executeCode(LIST_JULY_TRANSACTIONS_PROGRAM, {
+    const execution = executeCode(RECONCILE_JULY_GENERAL_LEDGER_PROGRAM, {
       gateway,
       signal: controller.signal,
     })
@@ -388,7 +580,7 @@ describe("executeCode", () => {
     const refusal = await executeCode(
       `
         try {
-          yield* app.transactions.get({ transactionId: "txn_005" });
+          yield* app.events.get({ eventId: "evt_secondary_001" });
           return "unexpected-success";
         } catch (error) {
           return error._tag;
@@ -398,12 +590,12 @@ describe("executeCode", () => {
     )
     const attempts = await Effect.runPromise(gateway.attempts)
 
-    expect(refusal.output).toBe("LedgerAuthorizationError")
+    expect(completedOutput(refusal)).toBe("EventNotFoundError")
     expect(attempts.at(-1)).toMatchObject({
-      name: "transactions.get",
-      authorization: "refused",
+      name: "events.get",
       outcome: "failed",
       stage: "authorization",
+      errorTag: "EventNotFoundError",
     })
   })
 })

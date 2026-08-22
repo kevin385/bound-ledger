@@ -4,10 +4,17 @@ import { fileURLToPath } from "node:url"
 import { Effect, Result } from "effect"
 
 import {
+  ConfirmationRequiredError,
+  type ConfirmationRequest,
   type CapabilityGatewayService,
   type CapabilityInvocationError,
 } from "@bound/capability"
 
+import {
+  buildGuestSdkSource,
+  resolveCodeModeManifest,
+  type InstalledCodeModeCapability,
+} from "./manifest.ts"
 import {
   CodeModeAbortedError,
   type CodeModeError,
@@ -37,11 +44,22 @@ export interface ExecuteCodeOptions {
   readonly limits?: CodeModeLimits
 }
 
-export interface CodeModeRunResult {
+export interface CodeModeCompletedRunResult {
+  readonly status: "completed"
   readonly output: unknown
   readonly capabilityCalls: number
   readonly mutationCalls: number
 }
+
+export interface CodeModeConfirmationRequiredRunResult {
+  readonly status: "confirmation_required"
+  readonly confirmation: ConfirmationRequest
+  readonly capabilityCalls: number
+  readonly mutationCalls: number
+}
+
+export type CodeModeRunResult =
+  CodeModeCompletedRunResult | CodeModeConfirmationRequiredRunResult
 
 const limitError = (
   limit: CodeModeLimitError["limit"],
@@ -68,13 +86,19 @@ export const executeCode = (
   options: ExecuteCodeOptions,
 ): Promise<CodeModeRunResult> => {
   let limits: ResolvedCodeModeLimits
+  let installedCapabilities: ReadonlyArray<InstalledCodeModeCapability>
+  let sdkSource: string
   try {
     limits = resolveCodeModeLimits(options.limits)
+    installedCapabilities = resolveCodeModeManifest(
+      options.gateway.capabilities,
+    )
+    sdkSource = buildGuestSdkSource(installedCapabilities)
   } catch (error) {
     return Promise.reject(error)
   }
   const capabilityKinds = new Map(
-    options.gateway.capabilities.map((capability) => [
+    installedCapabilities.map((capability) => [
       capability.name,
       capability.kind,
     ]),
@@ -85,6 +109,15 @@ export const executeCode = (
         "program_size",
         limits.programBytes,
         "generated program exceeds the program-size limit",
+      ),
+    )
+  }
+  if (byteLength(sdkSource) > limits.programBytes) {
+    return Promise.reject(
+      limitError(
+        "program_size",
+        limits.programBytes,
+        "generated SDK proxy exceeds the program-size limit",
       ),
     )
   }
@@ -233,6 +266,19 @@ export const executeCode = (
         )
         if (settled) return
 
+        if (
+          Result.isFailure(invocation) &&
+          invocation.failure instanceof ConfirmationRequiredError
+        ) {
+          succeed({
+            status: "confirmation_required",
+            confirmation: invocation.failure.request,
+            capabilityCalls,
+            mutationCalls,
+          })
+          return
+        }
+
         const response: ParentMessage = Result.isSuccess(invocation)
           ? {
               type: "response",
@@ -298,6 +344,7 @@ export const executeCode = (
         }
         try {
           succeed({
+            status: "completed",
             output: JSON.parse(message.serialized),
             capabilityCalls,
             mutationCalls,
@@ -358,7 +405,12 @@ export const executeCode = (
     })
 
     try {
-      send(child, { type: "start", program, limits: runtimeLimits })
+      send(child, {
+        type: "start",
+        program,
+        sdkSource,
+        limits: runtimeLimits,
+      })
     } catch (error) {
       fail(
         error instanceof CodeModeProtocolError
@@ -371,7 +423,17 @@ export const executeCode = (
   })
 }
 
-export const LIST_JULY_TRANSACTIONS_PROGRAM = `
-  const transactions = yield* app.transactions.list({ month: "2026-07" });
-  return transactions;
+export const RECONCILE_JULY_GENERAL_LEDGER_PROGRAM = `
+  const range = {
+    from: "2026-07-01T00:00:00.000Z",
+    to: "2026-08-01T00:00:00.000Z",
+  };
+  const events = yield* app.events.query(range);
+  const activity = yield* app.reports.activity(range);
+  const trialBalance = yield* app.reports.trialBalance({ at: range.to });
+  return {
+    eventCount: events.length,
+    expenseTotalMinor: activity.expenseTotalMinor,
+    trialBalanceZero: trialBalance.totalMinor === 0,
+  };
 `

@@ -1,15 +1,25 @@
-# Bound Ledger — Research and Portfolio Plan
+# Bound Ledger — Research, Product Direction, and Portfolio Plan
 
 ## Status
 
-This document is the research thesis, target architecture, and long-term
-evaluation plan. The phase order in [`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md)
-is authoritative for current implementation work.
+This document is the research thesis, target architecture, portfolio release
+contract, and evidence-gated long-term product direction. The phase order in
+[`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md) is authoritative for current
+implementation work.
 
 The product and repository are named **Bound Ledger**. Workspace packages keep
 the `@bound/*` namespace.
 
+Implementation status: Phase 15 is complete; Phase 16 is fully specified in
+`docs/INITIAL_PLAN.md` and is the next code boundary.
+
 > Let agents code inside your application—without coding around its rules.
+
+The current repository is pre-alpha local research software with deterministic
+fixtures. The possible product direction is an open-source, self-hostable,
+model-agnostic personal-finance assistant. That direction is not a claim that
+persistence, real-data ingestion, model selection, bank connectivity, or a
+production security boundary exists today.
 
 Bound Ledger is a clean-room implementation. External systems may be consulted
 for architectural lessons and documented failure modes, but their
@@ -60,6 +70,80 @@ The concise portfolio description is:
 > deterministic application code.
 
 Do not position the initial release as a production-ready general agent framework.
+
+### Long-term product direction
+
+If the portfolio release and user validation justify continued investment,
+Bound Ledger may evolve into:
+
+> An open-source, self-hostable personal-finance workspace where people can use
+> a local or hosted model to analyze financial evidence and propose exact
+> operations, while deterministic ledger code, application authorization, and
+> explicit human confirmation remain the authority.
+
+This is not a generic "chat with transactions" product. Its intended wedge is
+governed financial agency:
+
+- source records remain distinguishable from interpreted proposals;
+- proposals and assumptions remain distinguishable from posted facts;
+- the model may search, explain, reconcile, and prepare corrections;
+- deterministic application code calculates balances and validates postings;
+- consequential operations bind approval to exact decoded inputs;
+- every attempted and completed operation is attributable and inspectable;
+- changing the model provider does not change domain or authorization rules.
+
+The reference user outcome is a trustworthy monthly reconciliation:
+
+1. import a bounded source such as CSV or OFX/QFX;
+2. identify transfers, expenses, refunds, duplicates, and ambiguous records;
+3. show evidence and explicit assumptions;
+4. prepare exact balanced corrections;
+5. let the user confirm or reject each consequential operation;
+6. preserve an append-only audit trail of proposals, decisions, and posted
+   events.
+
+### Open-source and model-choice principles
+
+- Apache-2.0 source remains the default distribution shape unless an explicit
+  evidence-backed licensing decision changes it.
+- A useful local workflow must not require a hosted Bound Ledger service.
+- Deterministic tests and manual ledger workflows must not require any model.
+- Model integration belongs behind a small provider-neutral adapter contract;
+  no provider becomes the source of application identity or financial truth.
+- Local and OpenAI-compatible endpoints are product goals, not current
+  features. Native provider adapters are added only when their streaming,
+  cancellation, structured-output, tool-use, and usage semantics are tested.
+- Users choose what data may leave their machine. Remote-model calls must
+  disclose the provider and data scope before transmission and minimize the
+  source data placed in model context.
+- Provider conformance tests must cover streaming text, tool calls, abort,
+  malformed output, usage reporting, unavailable capabilities, and models that
+  cannot reliably use code mode.
+- Tool mode remains a supported fallback. Bring-your-own-model must not mean
+  every model is assumed to support generated-code orchestration safely.
+
+### Product evidence gates
+
+Do not turn the possible direction into an unbounded finance-suite roadmap.
+Continue beyond the portfolio release only when a narrow reconciliation
+workflow demonstrates real use:
+
+- at least ten target users attempt the workflow;
+- after a separately planned security-reviewed import phase permits it,
+  several users import their own sanitized or real records under an appropriate
+  pre-alpha disclosure;
+- at least three users return for another reporting period;
+- users understand and value the distinction between proposed and posted;
+- the workflow saves meaningful review time without allowing incorrect or
+  unauthorized postings;
+- users value auditability, self-hosting, or model choice rather than only a
+  free dashboard.
+
+If users want only read-only questions such as category totals, integrate with
+or contribute to an established finance system rather than recreating its
+budgeting, sync, mobile, and reporting surface. If the governed reconciliation
+workflow is valuable, grow outward from that workflow instead of cloning a
+general consumer-finance application.
 
 ## 3. Reference application: Personal Financial Ledger
 
@@ -145,6 +229,13 @@ Do not add live bank connections, payment initiation, receipt OCR, tax advice,
 financial recommendations, foreign exchange, security lots, market-price
 valuation, or automated trading. The kernel begins in memory with one currency
 and deterministic fixtures. It records financial facts but never moves money.
+
+For the possible product direction, deterministic CSV and OFX/QFX import comes
+before any bank aggregator. A later bank connection is read-only ingestion: it
+may create source records and proposals but must not post facts directly or
+initiate payments. Tax, investment, lending, or personalized financial advice
+requires a separate product, legal, safety, and jurisdictional decision; it is
+not implied by the personal-ledger roadmap.
 
 ### Seed data
 
@@ -332,6 +423,34 @@ Execution mode
 
 The mode changes orchestration only. It must not change domain behavior or authority.
 
+### Possible product deployment shape
+
+This is a post-validation target, not the current in-memory runtime:
+
+```text
+manual entry / CSV / OFX-QFX / read-only connector
+                       ↓
+            source evidence + import identity
+                       ↓
+             proposal and assumption layer
+                       ↓
+human UI ───────> application capability gateway <────── Pi agent loop
+   │                    ↓                    ↑                 ↑
+   │        validation + authorization      │          chosen model
+   │             + exact confirmation       │       local or explicitly
+   │                    ↓                    │        configured remote
+   └────────> deterministic ledger kernel ──┘
+                        ↓
+          local persistent append-only store
+                        ↓
+        projections, audit trace, backup/export
+```
+
+Source connectors and models are replaceable inputs. Neither receives database
+authority. A connector creates source records; a model creates interpretations
+and capability requests; only the application gateway and deterministic kernel
+can turn approved input into posted financial facts.
+
 ## 7. Architectural invariants
 
 ### I1. One capability implementation
@@ -387,6 +506,19 @@ derives balances, and calculates reports. AI may interpret sources and
 orchestrate capabilities, but its narration and arithmetic are never
 authoritative financial state.
 
+### I13. Model choice does not change authority
+
+A local model, hosted provider, deterministic fake, or no model at all uses the
+same application capabilities and confirmation rules. Provider credentials,
+endpoint configuration, and data-disclosure choices remain trusted application
+configuration and never enter generated code.
+
+### I14. Imported evidence is not a posted fact
+
+A file row, statement item, connector record, extracted receipt field, or model
+interpretation may create source evidence or a proposal. It cannot affect
+balances until the application validates and posts an exact balanced event.
+
 ## 8. Capability authoring API
 
 Start with the smallest API that supports the reference application:
@@ -405,8 +537,7 @@ const postEvent = defineCapability({
       actor.mutableAccountIds.includes(posting.accountId),
     ),
 
-  execute: ({ input, services }) =>
-    services.ledger.postEvent(input),
+  execute: ({ input, services }) => services.ledger.postEvent(input),
 });
 ```
 
@@ -507,6 +638,31 @@ This project owns:
 - application persistence;
 - traces and evaluation records.
 
+### Future provider boundary
+
+Pi AI is the current model-facing dependency, but the product identity is not
+tied to one provider or model family. After the deterministic general-ledger
+tool/code comparison is complete, earn the smallest application-level provider
+configuration that can describe:
+
+```ts
+interface ModelConfiguration {
+  id: string;
+  provider: string;
+  model: string;
+  endpointKind: "native" | "openai_compatible" | "local";
+  supportsTools: boolean;
+  supportsCodeMode: boolean;
+}
+```
+
+Secrets, base URLs, actor identity, data-disclosure choices, and authorization
+never enter model arguments or generated code. The adapter must normalize
+streaming, cancellation, tool calls, structured failures, and usage evidence,
+while preserving provider-specific limitations rather than pretending all
+models are equivalent. Provider configuration belongs at an application
+composition root until at least two real applications need a shared package.
+
 Use `beforeToolCall` to restrict access to outer agent tools. Do not mistake this for per-capability enforcement inside `execute_code`; that enforcement belongs in the capability gateway.
 
 Use sequential execution for the code tool initially. Introduce parallel outer tool execution only after correctness tests exist.
@@ -577,12 +733,12 @@ Choose a sandbox implementation only after a short spike comparing isolation pro
 
 Keep the first version simple:
 
-| Access classification | Agent behavior |
-| --- | --- |
-| `read` | Execute immediately |
-| `mutation` | Execute and record |
+| Access classification   | Agent behavior                       |
+| ----------------------- | ------------------------------------ |
+| `read`                  | Execute immediately                  |
+| `mutation`              | Execute and record                   |
 | `confirmation_required` | Return a pending confirmation result |
-| `forbidden` | Reject |
+| `forbidden`             | Reject                               |
 
 When code mode encounters a pending confirmation:
 
@@ -730,6 +886,8 @@ This is the target shape, not required scaffolding on day one. Begin with one ap
 - TypeBox only where Pi Agent Core's tool schema boundary requires it
 - React for the Personal Financial Ledger and inspector
 - SQLite for deterministic local persistence
+- an application-owned model configuration over Pi AI for tested native,
+  OpenAI-compatible, and local endpoints after the provider phase is earned
 - Vitest for unit and integration tests
 - Playwright for flagship UI scenarios
 - A sandbox technology selected through an explicit isolation spike
@@ -737,8 +895,10 @@ This is the target shape, not required scaffolding on day one. Begin with one ap
 Avoid cloud infrastructure until the Phase 5 local CLI agent path in
 `docs/INITIAL_PLAN.md` passes. A later Cloudflare proof may add a Worker only
 as a composition root; it must not replace Pi Agent Core or the application
-capability boundary. A reviewer should be able to run the project locally with
-one model API key, and deterministic safety tests must require no model.
+capability boundary. A reviewer must be able to run the deterministic project
+without a model or API key. Later live-model demonstrations may accept a local
+endpoint or an explicitly configured user-owned API key, and ordinary CI must
+never require either.
 
 ## 17. Milestones
 
@@ -843,6 +1003,30 @@ Exit condition: the repository contains reproducible evidence for where code mod
 
 Exit condition: a new reviewer can clone, run the deterministic demo, understand the architecture, and inspect the evaluation results.
 
+### Post-publication product validation — earned, not assumed
+
+Only after Milestones 0–7 and the product evidence gates near the top of this
+document pass, plan product phases in this order:
+
+1. **Persistent local ledger** — SQLite, migrations, backup, restore, export,
+   crash recovery, and deterministic fixture migration.
+2. **Bounded source import** — CSV first, then OFX/QFX; raw evidence remains
+   separate from proposals and posted facts.
+3. **Provider choice** — one hosted adapter, one OpenAI-compatible adapter, and
+   one local adapter behind conformance tests and explicit data-disclosure UI.
+4. **Governed reconciliation** — evidence-backed matching, ambiguity review,
+   exact proposals, confirmation, and an audit trail over imported records.
+5. **Self-hosted distribution** — reproducible container and local install,
+   documented secrets, health checks, upgrades, backup, and recovery.
+6. **Optional read-only aggregation** — only after the import workflow proves
+   value; connectors create source records and proposals but never move money
+   or post directly.
+
+Do not schedule mobile applications, investments, tax features, payment
+initiation, broad budgeting parity, or a marketplace before this sequence
+produces retention evidence. Those are separate product bets, not automatic
+consequences of open sourcing the reference application.
+
 ## 18. Test plan
 
 ### Financial kernel
@@ -934,6 +1118,21 @@ Choose the final open-source shape based on evidence:
 
 The architecture must earn its generalization.
 
+### Gate D — before a broader personal-finance product
+
+Run the product evidence gate on the narrow import-and-reconcile workflow.
+Choose one of four outcomes explicitly:
+
+- stop at a published research/reference application;
+- maintain a focused governed-ledger or MCP component;
+- integrate the capability boundary with an established finance application;
+- continue into the self-hosted product sequence.
+
+Do not interpret repository attention, stars, or AI enthusiasm alone as user
+retention. Continue into bank aggregation or broad consumer features only when
+repeated real workflows show that governed proposals, auditability, or model
+choice solve a problem users will return to.
+
 ## 20. Clean-room reference policy
 
 Define each Bound Ledger requirement locally before consulting external implementations.
@@ -993,10 +1192,21 @@ The portfolio release is complete when:
 - the repository has no private-project dependency, branding, secrets, prompts, local paths, or copied product code;
 - licensing for the new implementation is explicit.
 
+The portfolio definition of done does not imply product readiness. A product
+release additionally requires the separately planned persistence, privacy,
+provider, ingestion, self-hosting, upgrade, backup/recovery, and real-user
+validation gates. Until those phases exist and pass, documentation must keep
+the warning against real financial data and hostile generated code.
+
 ## 24. Implementation sequence
 
 `docs/INITIAL_PLAN.md` contains the executable contract and preserves the
 historical order. Phases 1–9 completed the narrow transaction vertical slice,
 capability boundary, controlled code-mode proof, and first paired evaluation.
-Phase 10 replaces that narrow domain foundation with the general ledger kernel
-before any further code-mode, ingestion, persistence, or UI expansion.
+Phases 10–14 added the general-ledger kernel, read and confirmation-bound
+capabilities, Pi tool-mode baseline, and coherent human application. Phase 15
+migrated discovery, the generated guest SDK, confirmation termination, and the
+paired evaluation to the earned general-ledger catalog. Phase 16 is the next
+planned boundary: make that deterministic evidence visually inspectable in a
+read-only comparison workbench before persistence, ingestion, provider choice,
+or product expansion.

@@ -1,6 +1,6 @@
-import { runJulyListEvaluation } from "./evaluation/july-list-v1.ts"
+import { runGeneralLedgerReconciliationEvaluation } from "./evaluation/general-ledger-reconciliation-v1.ts"
 
-runJulyListEvaluation()
+runGeneralLedgerReconciliationEvaluation()
   .then((summary) => {
     console.log(JSON.stringify(summary, null, 2))
   })
