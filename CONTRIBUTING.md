@@ -19,11 +19,13 @@ Use the ownership and non-goals declared by the current phase. Do not add a
 package, agent, cloud resource, database, UI, or sandbox until the corresponding
 phase gate is complete.
 
-Phase 15 is currently planned. Contributions should begin with its manifest,
-discovery, guest-proxy, confirmation-presentation, equivalence, or evaluation
-tests. Do not add persistence, CSV/bank ingestion, model-provider adapters,
-API-key storage, self-hosting infrastructure, or the visual agent interface as
-part of Phase 15.
+Phase 15 is complete. Phase 16 is currently planned. Contributions should
+begin by sharing the canonical evaluation contract between the CLI and trusted
+application server with parity and redaction tests, then add the read-only
+`/comparison` route. Do not add live models, arbitrary prompts or generated
+program input, persistence, CSV/bank ingestion, model-provider adapters,
+API-key storage, self-hosting infrastructure, or confirmation controls as part
+of Phase 16.
 
 ## Development
 

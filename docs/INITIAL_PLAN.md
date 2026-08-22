@@ -9,9 +9,9 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 15 planned — migrate controlled code mode to the
-earned general-ledger catalog. Phase 14 is complete and verified; Phase 15 is
-the next implementation boundary.
+**Current phase:** Phase 16 planned — add a read-only visual comparison
+workbench. Phase 15 is complete and verified; Phase 16 is the next
+implementation boundary.
 
 ## Purpose
 
@@ -23,9 +23,9 @@ Phases 1–9 intentionally used a narrow transaction slice to establish the
 capability, agent, sandbox, and evaluation boundaries. Phases 10–14 replaced
 that domain foundation with the general-ledger kernel, moved its earned
 operations through the gateway and Pi tool mode, and added the governed human
-application. Phase 15 now migrates the controlled code-mode proof to that same
-general-ledger catalog before persistence, ingestion, provider choice, or the
-visual comparison UI.
+application. Phase 15 migrated the controlled code-mode proof to that same
+general-ledger catalog. Phase 16 may now expose the already-earned comparison
+evidence visually, before persistence, ingestion, or provider choice.
 
 ## Project naming
 
@@ -1179,7 +1179,7 @@ server integration evidence. The application keeps financial reads and
 mutations behind the personal-ledger capability gateway and leaves the legacy
 code-mode catalog unchanged.
 
-## Phase 15 — Migrate controlled code mode to the general ledger
+## Phase 15 — Migrate controlled code mode to the general ledger (complete)
 
 Move the bounded generated-code path from the Phase 1–9 transaction proof to
 the same earned general-ledger catalog used by the Phase 13 Pi tool-mode
@@ -1239,7 +1239,7 @@ yield* app.accounts.list({})
 yield* app.events.get({ eventId })
 yield* app.events.query({ from?, to? })
 yield* app.events.post(input)
-yield* app.events.reverse({ eventId, idempotencyKey, effectiveAt, provenance })
+yield* app.events.reverse({ eventId, idempotencyKey, provenance })
 yield* app.reports.balance({ at })
 yield* app.reports.activity({ from, to })
 yield* app.reports.trialBalance({ at })
@@ -1471,26 +1471,162 @@ all sandbox and resource evidence remains green; the canonical legacy
 July-list evaluation is retired without deleting its historical result; and
 every Phase 1–14 application, agent, domain, and browser check remains passing.
 
+### Completion evidence
+
+Completed on 2026-08-22. The exact manifest has eight entries, discovery and
+the guest proxy share its gateway-filtered resolution, Pi code mode exposes
+only `inspect_capabilities` and `execute_code`, pending post and reversal stop
+at the parent boundary, and direct tests cover every installed SDK operation.
+The canonical `general-ledger-reconciliation` evaluation passed with equal
+facts, attempts, correctness, and safety: tool mode used three outer tools and
+code mode used one outer tool containing the same three reads. The historical
+July-list result is retained and marked superseded; its command and runner were
+removed.
+
+## Phase 16 — Add a visual comparison workbench
+
+Expose the Phase 15 evidence in the existing personal-ledger application so a
+person can understand what exists without reading terminal JSON. This phase is
+a visualization of the deterministic local proof, not an agent chat, provider
+integration, or new financial behavior.
+
+### Local requirement
+
+Add a route at `/comparison` with a trusted server-owned action that runs the
+versioned general-ledger reconciliation from fresh fixture state. The response
+must use the same task definition, scorer, gateway, manifest, and executor as
+the CLI command. Do not maintain a second handwritten set of expected facts or
+capability names in the browser application.
+
+The screen must make these relationships immediately visible:
+
+- one prompt and one expected answer feed both modes;
+- tool mode uses three outer tools while code mode uses one outer code tool;
+- both paths cross the same three ordered gateway capabilities;
+- both produce `4` events, `6249` expense minor units, and zero trial balance;
+- correctness and safety are equal for this one deterministic sample;
+- code-mode subprocess timing is diagnostic and is not a product advantage;
+- generated mutations still stop for separate trusted confirmation.
+
+### Shared evaluation boundary
+
+Move only the reusable general-ledger task, runner, result schema, and scorer
+out of the CLI application into an earned shared evaluation module or package.
+The CLI remains a thin JSON entry point and the personal-ledger server remains
+a thin UI-safe projection. The browser must never import Node process control,
+gateway services, faux-provider state, QuickJS handles, or trusted session
+objects.
+
+The server response must be a closed, size-bounded view model containing:
+
+- task and fixture versions, prompt, stable answer, and stable facts;
+- per-mode correctness and safety scores;
+- outer turns, outer tool calls, inner capability calls, mutation calls, and
+  diagnostic duration;
+- ordered capability names, kinds, authorization outcomes, and stages;
+- the fixed code-mode program used by the evaluation;
+- the paired comparison booleans and limitation note.
+
+Exclude actor IDs, workspace or ledger IDs, account permissions, raw schemas,
+confirmation control, environment values, host errors, and provider internals.
+The server function accepts no model-controlled program or capability input.
+
+### Interface
+
+Use the existing Astryx tokens and application shell. Add navigation to a
+single comparison page with:
+
+1. a concise prompt-and-result summary;
+2. side-by-side Tool mode and Code mode cards;
+3. an outer-call visualization showing `3` versus `1`;
+4. a shared ordered gateway-call table showing the same three inner reads;
+5. correctness, safety, and diagnostic timing rows;
+6. a collapsed, read-only generated-program panel;
+7. an explicit “deterministic local proof” limitations panel;
+8. idle, running, success, and failure states for “Run fresh comparison”.
+
+The comparison must remain usable at narrow mobile widths, meet keyboard focus
+and contrast requirements, and avoid implying that code mode is safer, faster,
+cheaper, or more capable based on one sample.
+
+### Required tests and evidence
+
+- shared evaluation tests keep the Phase 15 exact facts, attempts, scores, and
+  fail-closed comparison behavior;
+- CLI and server projections return the same stable fields from fresh state;
+- server output excludes trusted identifiers and unapproved controls;
+- the route renders without running an evaluation and can run it explicitly;
+- success renders the exact `3 -> 3` tool path and `1 -> 3` code path;
+- failure never displays a false passing state or stale successful evidence;
+- generated program display is read-only and no arbitrary program input exists;
+- keyboard, responsive layout, route navigation, build, and browser tests pass;
+- every Phase 1–15 test remains green.
+
+### Expected files
+
+```text
+packages/evaluation/ or an equivalent earned shared module
+apps/cli/src/evaluate-general-ledger.ts
+apps/personal-ledger/src/routes/comparison.tsx
+apps/personal-ledger/src/server/comparison.ts
+apps/personal-ledger/e2e/comparison.spec.ts
+README.md
+docs/INITIAL_PLAN.md
+```
+
+Choose the smallest shared ownership boundary during implementation. A new
+package is justified only because the CLI and trusted application server would
+be real independent consumers; do not extract generic tracing or provider
+frameworks with it.
+
+### Non-goals
+
+- No live model, model selector, API-key entry, local-model adapter, or chat.
+- No editable generated code, arbitrary prompts, uploaded financial data, or
+  model-controlled server input.
+- No persistence, authentication, bank connection, ingestion, deployment, or
+  real financial data.
+- No new ledger capability, proposal mutation, confirmation approval/rejection
+  from the comparison page, or sandbox architecture change.
+- No claim that this single faux-provider task proves a general mode advantage.
+
+### Verification
+
+```sh
+pnpm check
+pnpm start
+pnpm eval:general-ledger
+pnpm build:personal-ledger
+pnpm test:e2e
+```
+
+**Exit condition:** a person can open `/comparison`, run the same canonical
+fresh-state reconciliation as the CLI, and visually verify the shared facts,
+ordered gateway calls, scores, and `3` versus `1` outer-call difference without
+receiving new authority or exposing trusted context; all prior evidence remains
+green.
+
 ## Packages that must earn their existence
 
-| Boundary | Status | Add when |
-| --- | --- | --- |
-| `@bound/capability` | Earned | Three existing operations need one validated and authorized invocation path. |
-| `@bound/pi-adapter` | Earned | The capability boundary is tested and ready for an agent surface. |
-| `@bound/code-mode` | Earned | The sandbox ADR passes its decision gate. |
-| `apps/personal-ledger` | Earned | The CLI demonstrates the general-ledger agent path and the human workflow must use the same gateway. |
-| `@bound/trace` | Deferred | A second application consumer needs the same stable trace vocabulary. |
-| `@bound/testing` | Deferred | Two packages genuinely share fixtures or test runtime construction. |
-| Policy package | Deferred | At least two consumers need the same effective-dated policy behavior after the posting kernel is stable. |
-| Database package | Deferred | In-memory behavior is stable, product validation justifies persistence, and a migration/backup contract is documented. |
-| Provider package | Deferred | At least two application consumers need the same tested model-provider configuration rather than app-owned composition. |
+| Boundary                   | Status             | Add when                                                                                                                |
+| -------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `@bound/capability`        | Earned             | Three existing operations need one validated and authorized invocation path.                                            |
+| `@bound/pi-adapter`        | Earned             | The capability boundary is tested and ready for an agent surface.                                                       |
+| `@bound/code-mode`         | Earned             | The sandbox ADR passes its decision gate.                                                                               |
+| `apps/personal-ledger`     | Earned             | The CLI demonstrates the general-ledger agent path and the human workflow must use the same gateway.                    |
+| Shared evaluation boundary | Phase 16 candidate | The CLI and trusted application server need one canonical task, scorer, and runner without cross-app imports.           |
+| `@bound/trace`             | Deferred           | A second application consumer needs the same stable trace vocabulary.                                                   |
+| `@bound/testing`           | Deferred           | Two packages genuinely share fixtures or test runtime construction.                                                     |
+| Policy package             | Deferred           | At least two consumers need the same effective-dated policy behavior after the posting kernel is stable.                |
+| Database package           | Deferred           | In-memory behavior is stable, product validation justifies persistence, and a migration/backup contract is documented.  |
+| Provider package           | Deferred           | At least two application consumers need the same tested model-provider configuration rather than app-owned composition. |
 
 ## Immediate next task
 
-Implement Phase 15 in its documented order. Start with failing manifest and
-discovery tests in `@bound/code-mode`, then generate the gateway-filtered guest
-proxy from that manifest. Do not begin with the agent UI, persistence,
-ingestion, provider adapters, or legacy deletion. The first reviewable slice is
-complete when all eight general-ledger entries are validated, discoverable, and
-installed in the guest runtime while every existing sandbox test remains
-green.
+Implement Phase 16 in its documented order. Start by moving the canonical
+evaluation contract behind one shared server-safe boundary with parity and
+redaction tests; then build the read-only `/comparison` route over that result.
+Do not begin with live models, arbitrary prompts, persistence, ingestion,
+provider adapters, or confirmation controls. The first reviewable slice is
+complete when the CLI and a trusted server projection return the same stable
+comparison facts without exposing actor, ledger, permission, or host details.

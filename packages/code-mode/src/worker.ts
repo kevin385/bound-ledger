@@ -74,7 +74,7 @@ const fail = (error: unknown): void => {
   finish({ type: "error", kind: "program", message })
 }
 
-const guestSource = (program: string): string => `
+const guestSource = (program: string, sdkSource: string): string => `
   (function* () {
     "use strict";
     const __stringify = JSON.stringify.bind(JSON);
@@ -82,19 +82,7 @@ const guestSource = (program: string): string => `
     const __call = function* (name, input) {
       return yield __stringify({ type: "capability_request", name, input });
     };
-    const app = __freeze({
-      transactions: __freeze({
-        list: function* (input) {
-          return yield* __call("transactions.list", input);
-        },
-        get: function* (input) {
-          return yield* __call("transactions.get", input);
-        },
-        updateCategory: function* (input) {
-          return yield* __call("transactions.update_category", input);
-        },
-      }),
-    });
+    const app = ${sdkSource};
     const __user = (function* () {
       "use strict";
       ${program}
@@ -204,7 +192,9 @@ const start = async (message: ParentMessage & { readonly type: "start" }) => {
     shouldInterruptAfterDeadline(Date.now() + limits.runtimeMilliseconds),
   )
   context = runtime.newContext()
-  generator = unwrap(context.evalCode(guestSource(message.program)))
+  generator = unwrap(
+    context.evalCode(guestSource(message.program, message.sdkSource)),
+  )
   next = context.getProp(generator, "next")
   advance()
 }

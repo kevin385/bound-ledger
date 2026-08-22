@@ -21,6 +21,8 @@ export type CodeModeLimitSetting =
   | "runtimeMilliseconds"
   | "wallClockMilliseconds"
 
+export type CodeModeConfigurationSetting = CodeModeLimitSetting | "manifest"
+
 export class CodeModeAbortedError extends Data.TaggedError(
   "CodeModeAbortedError",
 )<{ readonly message: string }> {}
@@ -28,14 +30,12 @@ export class CodeModeAbortedError extends Data.TaggedError(
 export class CodeModeConfigurationError extends Data.TaggedError(
   "CodeModeConfigurationError",
 )<{
-  readonly setting: CodeModeLimitSetting
+  readonly setting: CodeModeConfigurationSetting
   readonly value: unknown
   readonly message: string
 }> {}
 
-export class CodeModeLimitError extends Data.TaggedError(
-  "CodeModeLimitError",
-)<{
+export class CodeModeLimitError extends Data.TaggedError("CodeModeLimitError")<{
   readonly limit: CodeModeLimit
   readonly maximum: number
   readonly message: string

@@ -10,7 +10,7 @@ implementation work.
 The product and repository are named **Bound Ledger**. Workspace packages keep
 the `@bound/*` namespace.
 
-Implementation status: Phase 14 is complete; Phase 15 is fully specified in
+Implementation status: Phase 15 is complete; Phase 16 is fully specified in
 `docs/INITIAL_PLAN.md` and is the next code boundary.
 
 > Let agents code inside your application—without coding around its rules.
@@ -537,8 +537,7 @@ const postEvent = defineCapability({
       actor.mutableAccountIds.includes(posting.accountId),
     ),
 
-  execute: ({ input, services }) =>
-    services.ledger.postEvent(input),
+  execute: ({ input, services }) => services.ledger.postEvent(input),
 });
 ```
 
@@ -734,12 +733,12 @@ Choose a sandbox implementation only after a short spike comparing isolation pro
 
 Keep the first version simple:
 
-| Access classification | Agent behavior |
-| --- | --- |
-| `read` | Execute immediately |
-| `mutation` | Execute and record |
+| Access classification   | Agent behavior                       |
+| ----------------------- | ------------------------------------ |
+| `read`                  | Execute immediately                  |
+| `mutation`              | Execute and record                   |
 | `confirmation_required` | Return a pending confirmation result |
-| `forbidden` | Reject |
+| `forbidden`             | Reject                               |
 
 When code mode encounters a pending confirmation:
 
@@ -1206,6 +1205,8 @@ historical order. Phases 1–9 completed the narrow transaction vertical slice,
 capability boundary, controlled code-mode proof, and first paired evaluation.
 Phases 10–14 added the general-ledger kernel, read and confirmation-bound
 capabilities, Pi tool-mode baseline, and coherent human application. Phase 15
-is the next planned boundary: migrate discovery, the generated guest SDK, and
-the paired evaluation to the earned general-ledger catalog before any visual
-comparison, persistence, ingestion, provider choice, or product expansion.
+migrated discovery, the generated guest SDK, confirmation termination, and the
+paired evaluation to the earned general-ledger catalog. Phase 16 is the next
+planned boundary: make that deterministic evidence visually inspectable in a
+read-only comparison workbench before persistence, ingestion, provider choice,
+or product expansion.

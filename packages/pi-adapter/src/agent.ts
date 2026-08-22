@@ -104,7 +104,7 @@ export const runLedgerAgentPrompt = async (
         : "You are the Bound Ledger assistant. Use ledger tools for ledger facts.")
   const systemPrompt =
     mode === "code"
-      ? `${baseSystemPrompt}\n\nCode-mode guide: ${formatCodeModeGuide(options.gateway)}`
+      ? `${baseSystemPrompt}\n\nCode-mode guide: ${formatCodeModeGuide()}`
       : baseSystemPrompt
   const agent = new Agent({
     initialState: {

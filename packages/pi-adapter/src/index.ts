@@ -11,7 +11,7 @@ export {
   formatCodeModeGuide,
   inspectCodeMode,
   projectCodeModeTools,
-  type CodeCapabilityGuideEntry,
+  type CodeModeDiscoveryResult,
   type CodeModeGuide,
   type CodeModeToolDetails,
 } from "./code-tools.ts"

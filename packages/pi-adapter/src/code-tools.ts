@@ -1,18 +1,31 @@
-import { Type } from "typebox"
+import { Type, type TSchema } from "typebox"
 
 import {
   CODE_MODE_DEFAULT_LIMITS,
+  discoverCodeModeCapabilities,
   executeCode,
+  resolveCodeModeManifest,
+  type CodeModeCapabilitySummary,
+  type CodeModeDiscoveryInput,
   type CodeModeRunResult,
 } from "@bound/code-mode"
-import type {
-  CapabilityGatewayService,
-  CapabilityKind,
-} from "@bound/capability"
-import type {
-  AgentTool,
-  AgentToolResult,
-} from "@earendil-works/pi-agent-core"
+import type { CapabilityGatewayService } from "@bound/capability"
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core"
+
+const InspectCapabilitiesParameters = Type.Object(
+  {
+    query: Type.Optional(
+      Type.String({
+        minLength: 1,
+        description: "Optional capability name or description search",
+      }),
+    ),
+    detail: Type.Optional(
+      Type.Union([Type.Literal("summary"), Type.Literal("declaration")]),
+    ),
+  },
+  { additionalProperties: false },
+)
 
 const ExecuteCodeParameters = Type.Object(
   {
@@ -25,95 +38,76 @@ const ExecuteCodeParameters = Type.Object(
   { additionalProperties: false },
 )
 
-interface CodeCapabilityProjection {
-  readonly name: string
-  readonly call: string
-}
-
-const codeCapabilityProjections: ReadonlyArray<CodeCapabilityProjection> = [
-  {
-    name: "transactions.list",
-    call: 'yield* app.transactions.list({ month: "YYYY-MM" })',
-  },
-  {
-    name: "transactions.get",
-    call: "yield* app.transactions.get({ transactionId })",
-  },
-  {
-    name: "transactions.update_category",
-    call: "yield* app.transactions.updateCategory({ transactionId, category })",
-  },
-]
-
-export interface CodeCapabilityGuideEntry {
-  readonly name: string
-  readonly description: string
-  readonly kind: CapabilityKind
-  readonly call: string
-}
-
 export interface CodeModeGuide {
   readonly syntax: string
-  readonly capabilities: ReadonlyArray<CodeCapabilityGuideEntry>
+  readonly discovery: string
+  readonly confirmation: string
   readonly limits: typeof CODE_MODE_DEFAULT_LIMITS
 }
 
-export type CodeModeToolDetails = CodeModeRunResult
+export interface CodeModeDiscoveryResult {
+  readonly capabilities: ReadonlyArray<CodeModeCapabilitySummary>
+}
+
+export type CodeModeToolDetails = CodeModeDiscoveryResult | CodeModeRunResult
 
 export const inspectCodeMode = (
   gateway: CapabilityGatewayService,
-): CodeModeGuide => {
-  const metadata = new Map(
-    gateway.capabilities.map((capability) => [capability.name, capability]),
+  input: CodeModeDiscoveryInput = {},
+): CodeModeDiscoveryResult =>
+  Object.freeze({
+    capabilities: discoverCodeModeCapabilities(
+      resolveCodeModeManifest(gateway.capabilities),
+      input,
+    ),
+  })
+
+export const formatCodeModeGuide = (): string =>
+  JSON.stringify(
+    Object.freeze<CodeModeGuide>({
+      syntax:
+        "Provide a generator body to execute_code. Use yield* for app SDK calls and return JSON-serializable data.",
+      discovery:
+        "Call inspect_capabilities to search summaries or request compact declarations before writing code.",
+      confirmation:
+        "A confirmation-required mutation stops the program and returns an exact pending preview. The model cannot approve or reject it.",
+      limits: CODE_MODE_DEFAULT_LIMITS,
+    }),
   )
-  const capabilities = codeCapabilityProjections.flatMap((projection) => {
-    const capability = metadata.get(projection.name)
-    if (capability === undefined) return []
-    return [
-      Object.freeze({
-        name: capability.name,
-        description: capability.description,
-        kind: capability.kind,
-        call: projection.call,
-      }),
-    ]
-  })
 
-  return Object.freeze({
-    syntax:
-      "Provide a generator body. Use yield* for SDK calls and return JSON-serializable data.",
-    capabilities: Object.freeze(capabilities),
-    limits: CODE_MODE_DEFAULT_LIMITS,
-  })
-}
-
-export const formatCodeModeGuide = (
-  gateway: CapabilityGatewayService,
-): string => JSON.stringify(inspectCodeMode(gateway))
-
-const codeResult = (
-  result: CodeModeRunResult,
-): AgentToolResult<CodeModeToolDetails> => ({
-  content: [{ type: "text", text: JSON.stringify(result) }],
-  details: result,
+const toolResult = <Details>(details: Details): AgentToolResult<Details> => ({
+  content: [{ type: "text", text: JSON.stringify(details) }],
+  details,
 })
 
 export const projectCodeModeTools = (
   gateway: CapabilityGatewayService,
-): ReadonlyArray<AgentTool<typeof ExecuteCodeParameters, CodeModeToolDetails>> => [
+): ReadonlyArray<AgentTool<TSchema, CodeModeToolDetails>> => [
+  {
+    name: "inspect_capabilities",
+    label: "Inspect ledger capabilities",
+    description:
+      "Search the bounded ledger SDK and optionally return compact declarations",
+    parameters: InspectCapabilitiesParameters,
+    executionMode: "sequential",
+    execute: async (_toolCallId, params) =>
+      toolResult(inspectCodeMode(gateway, params as CodeModeDiscoveryInput)),
+  },
   {
     name: "execute_code",
     label: "Execute bounded ledger code",
     description:
-      "Execute a generator body against the bounded Bound Ledger SDK described in the system prompt",
+      "Execute a generator body against the discovered bounded Bound Ledger SDK",
     parameters: ExecuteCodeParameters,
     executionMode: "sequential",
-    execute: async (_toolCallId, params, signal) =>
-      codeResult(
-        await executeCode(params.program, {
+    execute: async (_toolCallId, params, signal) => {
+      const { program } = params as { readonly program: string }
+      return toolResult(
+        await executeCode(program, {
           gateway,
           ...(signal === undefined ? {} : { signal }),
         }),
-      ),
+      )
+    },
   },
 ]
