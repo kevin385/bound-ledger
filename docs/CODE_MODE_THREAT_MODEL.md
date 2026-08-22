@@ -2,12 +2,17 @@
 
 ## Status and scope
 
-This threat model covers the proposed execution of model-generated JavaScript
-inside Bound Ledger. It is evidence for an experimental local proof, not a
-claim that the repository has a production security boundary.
+This threat model covers execution of model-generated JavaScript inside Bound
+Ledger. The current implementation is an experimental local proof over the
+legacy transaction catalog, not a claim that the repository has a production
+security boundary.
 
-Phase 6 evaluated runtimes. Phase 7 adds the controlled local proof in
+Phase 6 evaluated runtimes. Phase 7 added the controlled local proof in
 `packages/code-mode`; it remains unsuitable for real untrusted workloads.
+Phase 15 is planned to replace the hardcoded legacy proxy with one validated,
+gateway-filtered general-ledger manifest and to make confirmation-required
+termination explicit. Those Phase 15 properties are requirements until their
+tests and implementation land; they are not current security claims.
 
 ## Assets and trust boundaries
 
@@ -57,6 +62,12 @@ Also assume the chosen interpreter, its WebAssembly host, and the surrounding
 Node process may contain bugs. Language-level global removal alone is not an
 adequate isolation boundary.
 
+For the Phase 15 manifest migration, additionally assume generated input tries
+to influence SDK method names, install an undeclared capability, create a
+prototype path, make discovery disagree with the runtime proxy, catch a pending
+confirmation and continue, or replay a mutation after the guest should have
+stopped.
+
 ## Required sandbox contract
 
 Only deliberately installed deterministic helpers and the generated `app`
@@ -81,6 +92,32 @@ The Phase 7 executor enforces capability-call, mutation-call, and in-flight
 request-depth budgets in the parent. Its abort signal terminates the child and
 interrupts a pending gateway Effect. The gateway still decodes and authorizes
 every individual request.
+
+## Phase 15 manifest and confirmation requirements
+
+The general-ledger migration must preserve these additional properties:
+
+- one immutable host-owned manifest generates both progressive discovery and
+  the installed guest proxy;
+- the manifest is intersected with gateway metadata, and missing, duplicate,
+  invalid-path, or kind-mismatched entries fail before worker creation;
+- neither the model nor guest program supplies proxy paths, capability names,
+  declarations, agent-access values, or source fragments;
+- generated proxy source or descriptors remain subject to the program/protocol
+  size limits before crossing into the child;
+- capability discovery exposes no trusted session, hidden capability, raw
+  schema representation, pending-confirmation control, or application object;
+- confirmation-required gateway results terminate the child at the parent
+  boundary before guest `catch`, retry, or later statements can run;
+- the returned pending preview is the gateway's immutable safe preview, and
+  approval/rejection remains outside discovery, the proxy, and Pi tools;
+- pending and refused requests still count against capability and mutation
+  budgets;
+- tests prove that discovery, declarations, serialized request names, and the
+  installed proxy cannot drift.
+
+Until those requirements have executable evidence, the general-ledger catalog
+must not replace the current proof or be described as safely migrated.
 
 ## Executable evidence
 

@@ -3,6 +3,11 @@
 Bound Ledger is currently an early research project. Small, evidence-backed
 changes are preferred over framework expansion.
 
+The possible long-term direction is an open-source, self-hostable,
+model-agnostic personal-finance workspace, but future product intent does not
+authorize later-phase code. The current implementation boundary remains the
+one named in `docs/INITIAL_PLAN.md`.
+
 ## Choosing work
 
 Read [docs/INITIAL_PLAN.md](docs/INITIAL_PLAN.md) before changing code. It is the
@@ -13,6 +18,12 @@ architecture in [PLAN.md](PLAN.md).
 Use the ownership and non-goals declared by the current phase. Do not add a
 package, agent, cloud resource, database, UI, or sandbox until the corresponding
 phase gate is complete.
+
+Phase 15 is currently planned. Contributions should begin with its manifest,
+discovery, guest-proxy, confirmation-presentation, equivalence, or evaluation
+tests. Do not add persistence, CSV/bank ingestion, model-provider adapters,
+API-key storage, self-hosting infrastructure, or the visual agent interface as
+part of Phase 15.
 
 ## Development
 
@@ -41,6 +52,24 @@ pnpm start
 
 If a pull request completes a phase, update the **Current phase** marker in
 `docs/INITIAL_PLAN.md` in the same change.
+
+If a change alters a public command, workspace, capability catalog, sandbox
+contract, security boundary, or phase exit condition, update the README and
+affected plan/threat-model/ADR documentation in the same pull request. Keep
+descriptions explicit about what is implemented versus only planned.
+
+## Financial and model data
+
+- Use only deterministic, synthetic fixtures committed for that purpose.
+- Never commit real statements, account identifiers, access tokens, API keys,
+  prompts containing personal financial data, or model-provider responses that
+  contain user data.
+- Deterministic tests must remain runnable without a model or API key.
+- Live-model tests, when a later phase permits them, must be opt-in and excluded
+  from ordinary CI.
+- Do not add a provider or source connector before its trusted context,
+  disclosure, secret handling, failure behavior, and conformance tests are
+  documented.
 
 ## Clean-room contributions
 

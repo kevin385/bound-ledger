@@ -11,15 +11,43 @@ QuickJS-WASM runtime inside a disposable subprocess and can reach ledger
 behavior only through the same capability gateway as tool mode. This remains a
 local research proof, not a production sandbox or framework.
 
+The possible long-term direction is an open-source, self-hostable,
+model-agnostic personal-finance workspace: people may use a local or hosted
+model to analyze evidence and propose exact operations, while deterministic
+ledger code and explicit confirmation remain authoritative. That product does
+not exist in this repository today. Persistence, real-data import, provider
+selection, bank connectivity, authentication, and production isolation are
+future evidence-gated work.
+
+## What exists today
+
+- an in-memory, single-currency, append-only double-entry ledger with
+  deterministic fixtures;
+- accounts, posted events, unposted proposals, balances, activity, expenses,
+  trial balance, reversal, replacement, provenance, and idempotency behavior;
+- one capability gateway for input/output decoding, trusted-session
+  authorization, confirmation-bound mutations, and structured attempts;
+- a governed human application with dashboard, journal, event detail, proposal
+  review, expense/reversal requests, exact confirm/reject controls, and reset;
+- a deterministic general-ledger Pi tool-mode reconciliation;
+- a controlled QuickJS-WASM code-mode proof still using the legacy
+  `transactions.*` catalog;
+- sandbox threat probes and one historical paired tool/code evaluation.
+
+The next phase migrates code mode and the paired evaluation to the same
+general-ledger catalog already used by tool mode. See
+[`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md) for the executable Phase 15
+contract.
+
 ```text
-apps/cli          runnable composition root
-apps/personal-ledger Astryx browser application and trusted server functions
-packages/capability validated and authorized invocation boundary
-packages/code-mode bounded guest SDK and subprocess execution bridge
-packages/ledger   ledger domain and legacy transaction proof
-packages/pi-adapter Pi tool projection and event translation
-experiments/sandbox executable runtime comparison and threat probes
-evals/results      checked-in paired evaluation summary
+apps/cli                runnable demos, agents, and evaluations
+apps/personal-ledger    Astryx browser application and trusted server functions
+packages/capability     validated and authorized invocation boundary
+packages/code-mode      bounded guest SDK and subprocess execution bridge
+packages/ledger         ledger domain and legacy transaction proof
+packages/pi-adapter     Pi tool projection and event translation
+experiments/sandbox     executable runtime comparison and threat probes
+evals/results           checked-in paired evaluation evidence
 ```
 
 ## Requirements
@@ -69,7 +97,8 @@ confirmation controls, and deterministic reset all use the same
 application-owned capability gateway. The responsive interface uses Astryx's
 neutral theme; TanStack Router, Query, and Form own navigation, server state,
 and human mutation forms. Use only the checked-in fixture data; this remains a
-local research application.
+local research application. Open <http://127.0.0.1:4173> after the development
+server starts.
 `pnpm check` typechecks and tests every workspace.
 `pnpm test:sandbox` runs the pinned QuickJS-WASM and `isolated-vm` escape and
 resource-limit comparison in disposable child processes.
@@ -79,6 +108,13 @@ resource-limit comparison in disposable child processes.
 Bound Ledger is pre-alpha research software. It is not a production security
 boundary and should not process real financial data or untrusted generated
 code.
+
+Phase 14 is complete. Phase 15 is planned and is the only authorized next
+implementation phase. It migrates the validated general-ledger catalog into
+code mode, adds progressive discovery from one manifest, makes pending
+confirmation explicit, and replaces the canonical legacy July-list comparison
+with a general-ledger reconciliation evaluation. It does not add live models,
+provider selection, persistence, ingestion, or the agent UI.
 
 Please report security issues through GitHub's private vulnerability reporting
 flow described in [SECURITY.md](SECURITY.md).

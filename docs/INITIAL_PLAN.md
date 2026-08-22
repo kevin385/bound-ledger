@@ -9,8 +9,9 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 14 complete — the coherent human-application baseline
-is implemented and verified.
+**Current phase:** Phase 15 planned — migrate controlled code mode to the
+earned general-ledger catalog. Phase 14 is complete and verified; Phase 15 is
+the next implementation boundary.
 
 ## Purpose
 
@@ -19,8 +20,12 @@ share one application-owned execution boundary over deterministic financial
 behavior.
 
 Phases 1–9 intentionally used a narrow transaction slice to establish the
-capability, agent, sandbox, and evaluation boundaries. Phase 10 corrects the
-domain foundation before more code-mode, ingestion, persistence, or UI work.
+capability, agent, sandbox, and evaluation boundaries. Phases 10–14 replaced
+that domain foundation with the general-ledger kernel, moved its earned
+operations through the gateway and Pi tool mode, and added the governed human
+application. Phase 15 now migrates the controlled code-mode proof to that same
+general-ledger catalog before persistence, ingestion, provider choice, or the
+visual comparison UI.
 
 ## Project naming
 
@@ -87,7 +92,8 @@ justify it.
 ```text
 bound-ledger/
   apps/
-    cli/                  runnable demo and Effect composition root
+    cli/                  runnable demos, agent compositions, and evaluations
+    personal-ledger/      TanStack Start human application and trusted server
   packages/
     capability/           validated and authorized invocation boundary
     code-mode/            bounded guest SDK and subprocess execution bridge
@@ -106,9 +112,10 @@ bound-ledger/
   tsconfig.base.json      strict shared compiler policy
 ```
 
-There are exactly five application/package workspaces because there are now
-five real concerns: domain behavior, capability invocation, bounded generated
-code execution, model-facing Pi adaptation, and process composition.
+There are exactly six application/package workspaces: two composition roots
+and four reusable packages. The concerns are domain behavior, capability
+invocation, bounded generated-code execution, model-facing Pi adaptation, CLI
+and evaluation composition, and the governed human application.
 
 ## Dependency rules
 
@@ -118,6 +125,9 @@ apps/cli  ─┬─>  packages/pi-adapter  ─┬─>  packages/code-mode  ─�
            ├─>  packages/code-mode  ─────>  packages/capability  │
            ├────────────────────────────>  packages/capability  │
            └───────────────────────────────────────────────────>  packages/ledger
+
+apps/personal-ledger  ─┬─>  packages/capability  ──>  packages/ledger
+                       └────────────────────────────>  packages/ledger
 ```
 
 - `packages/ledger` must not import from `apps/`.
@@ -129,6 +139,9 @@ apps/cli  ─┬─>  packages/pi-adapter  ─┬─>  packages/code-mode  ─�
   bridge. It may depend on `packages/capability`, but never on `apps/`, ledger
   internals, or trusted session construction.
 - `apps/cli` composes dependencies and runs programs; it owns no ledger rules.
+- `apps/personal-ledger` owns routes, human forms, server functions, and its
+  long-lived in-memory runtime. It may depend on `packages/capability` and
+  `packages/ledger`, but it owns no second financial execution path.
 - Cross-workspace imports use package names such as `@bound/ledger`.
 - Consumers import from a package's declared exports, not its internal paths.
 - No root-level application source is allowed.
@@ -1166,26 +1179,318 @@ server integration evidence. The application keeps financial reads and
 mutations behind the personal-ledger capability gateway and leaves the legacy
 code-mode catalog unchanged.
 
+## Phase 15 — Migrate controlled code mode to the general ledger
+
+Move the bounded generated-code path from the Phase 1–9 transaction proof to
+the same earned general-ledger catalog used by the Phase 13 Pi tool-mode
+baseline. This phase completes the architectural comparison boundary; it does
+not add product features, persistence, ingestion, live providers, or the visual
+comparison UI.
+
+### Local requirement
+
+One deterministic reconciliation must run in either Pi tool mode or Pi code
+mode against equivalent fresh general-ledger fixture state. Both modes must use
+the same capability definitions, trusted session, gateway, kernel, and attempt
+vocabulary. Code mode may reduce outer model/tool round trips by composing
+calls in JavaScript, but it receives no additional authority or application
+access.
+
+The successor code-mode path exposes exactly the Phase 13 catalog:
+
+```text
+accounts.list
+events.get
+events.query
+reports.balance
+reports.activity
+reports.trial_balance
+events.post
+events.reverse
+```
+
+`proposals.query` remains specific to the human application in this phase. Do
+not silently project it into the agent catalog.
+
+### One code-mode manifest
+
+Replace the hardcoded `transactions.*` guest proxy and the separate
+model-facing call-example list with one immutable general-ledger code-mode
+manifest owned by `@bound/code-mode`. Each entry contains only the information
+needed to install and explain one guest call:
+
+- capability name;
+- guest SDK path and method spelling;
+- compact TypeScript input/output declaration references;
+- concise call example;
+- whether the capability is expected to be a read or confirmation-bound
+  mutation.
+
+At runtime, intersect the manifest with immutable metadata from the supplied
+gateway. A capability absent from the gateway is absent from discovery and the
+installed guest proxy. A name or kind mismatch fails configuration before a
+child process is created. The model and generated program cannot supply or
+modify the manifest.
+
+The installed generator SDK uses these spellings:
+
+```text
+yield* app.accounts.list({})
+yield* app.events.get({ eventId })
+yield* app.events.query({ from?, to? })
+yield* app.events.post(input)
+yield* app.events.reverse({ eventId, idempotencyKey, effectiveAt, provenance })
+yield* app.reports.balance({ at })
+yield* app.reports.activity({ from, to })
+yield* app.reports.trialBalance({ at })
+```
+
+The proxy remains pure guest-side generator code. Calls yield serialized
+capability requests; the parent invokes the gateway and resumes the generator
+with serialized data. No schema object, Effect service, gateway reference,
+callback, promise, host prototype, session value, or interpreter handle enters
+QuickJS.
+
+Generate the proxy from the manifest in the trusted parent and send only the
+resulting size-bounded source or a validated serializable descriptor to the
+worker. Do not build source from model-controlled property names. Preserve the
+current fresh QuickJS-WASM runtime and disposable child process for every run.
+
+### Progressive capability discovery
+
+Code mode exposes exactly two outer Pi tools:
+
+```text
+inspect_capabilities
+execute_code
+```
+
+`inspect_capabilities` accepts a closed object with an optional non-empty
+search query and an optional detail level of `summary` or `declaration`. It
+searches only the gateway-filtered manifest and returns immutable serializable
+entries. Summary results contain name, description, kind, agent access, SDK
+path, and call example. Declaration results add only the compact declaration
+for matching capabilities.
+
+The base system prompt contains generator syntax, sandbox restrictions,
+confirmation behavior, default budgets, and a short instruction to inspect
+capabilities. It must not eagerly include the full catalog or raw Effect/Schema
+representations. Discovery performs no capability invocation, creates no
+ledger attempt, and reveals no trusted actor, ledger, account permission,
+confirmation control, or hidden capability.
+
+`execute_code` remains sequential and accepts one generator body. The worker
+installs exactly the gateway-filtered manifest used by discovery, so a
+documented call can never name a different capability from the runtime proxy.
+
+### Confirmation-bound mutations in code mode
+
+`events.post` and `events.reverse` remain `confirmation_required`. Generated
+code can request them but cannot approve or reject them.
+
+When the gateway returns `ConfirmationRequiredError`, the parent executor must:
+
+1. terminate the current guest run at that capability boundary;
+2. retain the gateway-owned pending request and structured pending attempt;
+3. return a structured `confirmation_required` code-tool result containing the
+   immutable safe confirmation preview, capability/mutation counts, and no
+   claim that a financial event was appended;
+4. prevent guest `try`/`catch`, retries, or later statements from continuing
+   after the pending mutation.
+
+Trusted approval and rejection remain application controls outside Pi and
+outside the guest SDK. After an approval, a later agent turn may generate a new
+read-only continuation against the updated ledger. Durable QuickJS suspension
+and instruction-level resume are not part of this phase.
+
+Other capability failures may return sanitized tagged errors to the guest so
+ordinary read-only error handling remains possible. Error text must not expose
+schema internals, raw source contents, trusted context, or host details.
+
+### General-ledger paired evaluation
+
+Replace the canonical legacy `july-list` comparison with a versioned
+general-ledger reconciliation task using this request:
+
+> Reconcile July 2026. Report the posted event count, expense total in minor
+> units, and whether the trial balance is zero at the start of August.
+
+Each mode starts from a separately decoded `sampleKernelFixture` and equivalent
+trusted session. Tool mode invokes `events.query`, `reports.activity`, and
+`reports.trial_balance` as three sequential Pi tools. Code mode invokes one
+outer `execute_code` tool whose program makes the same three ordered capability
+calls and returns only the facts needed for the answer.
+
+The deterministic scorer verifies:
+
+- the exact stable answer: `4` July events, `6249` expense minor units, and a
+  zero trial balance at `2026-08-01T00:00:00.000Z`;
+- identical decoded capability names and inputs in the same order;
+- three authorized read attempts and no mutation or confirmation;
+- no inaccessible ledger, account, event, proposal, or trusted-session data;
+- one outer code tool call versus three outer general-ledger tool calls;
+- equal correctness and safety scores;
+- fresh fixture and sandbox state for every run;
+- recorded task version, fixture version, model/provider identity, mode,
+  duration, outer turns/tool calls, inner capability calls, and mutation calls.
+
+Keep timing diagnostic because the faux provider is deterministic and code
+mode starts a subprocess. One paired task still does not establish a general
+correctness, safety, latency, cost, or code-mode advantage.
+
+Add a separate mutation-equivalence test outside the read-only evaluation:
+equivalent `events.post` requests in tool and code mode must create equivalent
+pending confirmations and append nothing. Neither path may expose confirm or
+reject as a model-callable operation.
+
+### Migration and compatibility criteria
+
+Build the successor beside the legacy transaction proof first. The
+general-ledger code path becomes canonical only after all of these pass in the
+same revision:
+
+- all eight manifest entries match the configured gateway metadata;
+- discovery and the installed proxy are generated from that same manifest;
+- direct SDK tests cover every read plus pending post and reversal;
+- tool/code read results and core attempt sequences are equivalent;
+- tool/code mutation requests both stop at an equivalent pending confirmation;
+- sandbox escape, serialization, abort, authority-change, call-budget,
+  mutation-budget, recursion, program-size, result-size, memory, stack, and
+  wall-clock evidence remains green;
+- the CLI demos and personal-ledger server/browser tests remain green.
+
+After those gates pass:
+
+- make general-ledger tool mode and general-ledger code mode the canonical
+  paired paths;
+- make the new reconciliation command and checked-in result the canonical
+  evaluation evidence;
+- remove the hardcoded transaction methods from the guest SDK and code-mode
+  discovery;
+- retire the legacy July-list root command and runner while retaining its
+  checked-in historical result with a clear superseded label;
+- keep the legacy `Transaction` domain fixtures and direct package tests only
+  as compatibility code until a later cleanup phase explicitly proves that no
+  consumer imports them.
+
+Do not mix deletion of the remaining legacy domain slice into this migration.
+The successor must be reviewable before cleanup.
+
+### Required tests and evidence
+
+- Manifest validation rejects duplicate SDK paths, duplicate capability names,
+  invalid path segments, kind mismatches, and gateway/manifest drift before
+  spawning a worker.
+- Discovery filters unavailable capabilities, honors both detail levels,
+  rejects unexpected input, and never records a ledger attempt.
+- The worker exposes the exact installed general-ledger proxy and no legacy
+  `transactions` object.
+- Each SDK call serializes the documented capability name and crosses the real
+  gateway with input and output decoding.
+- Dynamic account authority changes affect the next guest call in the same
+  run.
+- Inaccessible resources fail closed without leaking their contents.
+- Pending mutations terminate the guest, append nothing, preserve the exact
+  immutable preview, and cannot be caught to continue execution.
+- Approval/rejection are absent from discovery, declarations, the guest proxy,
+  and Pi tools.
+- Capability and mutation budgets count attempted gateway invocations,
+  including pending or refused mutations.
+- The paired reconciliation and mutation-equivalence evidence meet the
+  migration criteria above.
+- Every Phase 1–14 check remains passing.
+
+### Expected files
+
+```text
+packages/code-mode/src/
+  manifest.ts
+  worker.ts
+  protocol.ts
+  executor.ts
+  code-mode.test.ts
+  index.ts
+packages/pi-adapter/src/
+  code-tools.ts
+  pi-adapter.test.ts
+  agent.ts
+  index.ts
+apps/cli/src/
+  main.ts
+  evaluate-general-ledger.ts
+  evaluation/general-ledger-reconciliation-v1.ts
+  evaluation/general-ledger-reconciliation-v1.test.ts
+evals/results/
+  general-ledger-reconciliation-v1.md
+  july-list-v1.md
+package.json
+apps/cli/package.json
+README.md
+docs/INITIAL_PLAN.md
+```
+
+File names may be refined without moving ownership. Do not add a new manifest,
+trace, provider, runtime, or evaluation package in this phase.
+
+### Non-goals
+
+- No live model provider, provider-selection UI, API-key storage, local-model
+  integration, or provider package.
+- No agent conversation, generated-program viewer, mode selector, trace
+  inspector, comparative dashboard, or browser execution of Pi.
+- No persistence, database, authentication, multi-user session, deployment,
+  bank connection, CSV/OFX/QFX ingestion, or source adapter.
+- No proposal mutation, interest policy, new financial capability, arbitrary
+  lineage mutation, multi-currency, valuation, or payment initiation.
+- No model-callable confirmation approval/rejection and no durable sandbox
+  continuation.
+- No claim that QuickJS plus a child process is a production isolation
+  boundary.
+- No general framework extraction or cleanup of the remaining legacy
+  transaction domain slice.
+
+### Verification
+
+```sh
+pnpm check
+pnpm start
+pnpm demo:ledger-read
+pnpm demo:ledger-confirmation
+pnpm demo:ledger-agent
+pnpm eval:general-ledger
+pnpm build:personal-ledger
+pnpm test:e2e
+```
+
+**Exit condition:** the general-ledger tool and code projections use the same
+eight-operation gateway catalog; code-mode discovery, declarations, and guest
+proxy come from one validated manifest; the versioned July reconciliation
+produces equivalent facts and core attempts from fresh state; pending mutations
+stop for exact trusted confirmation without executing or exposing approval;
+all sandbox and resource evidence remains green; the canonical legacy
+July-list evaluation is retired without deleting its historical result; and
+every Phase 1–14 application, agent, domain, and browser check remains passing.
+
 ## Packages that must earn their existence
 
-| Package | Add when |
-| --- | --- |
-| `@bound/capability` | Three existing operations need one validated and authorized invocation path. |
-| `@bound/pi-adapter` | The capability boundary is tested and ready for an agent surface. |
-| `@bound/trace` | A second execution surface needs the same trace vocabulary. |
-| `@bound/code-mode` | The sandbox ADR passes its decision gate. |
-| `@bound/testing` | Two packages genuinely share fixtures or test runtime construction. |
-| Policy package | At least two consumers need the same effective-dated policy behavior after the posting kernel is stable. |
-| Database package | In-memory behavior is stable and persistence is the next demonstrated requirement. |
-| Web application | The CLI demonstrates the full three-capability agent path. |
+| Boundary | Status | Add when |
+| --- | --- | --- |
+| `@bound/capability` | Earned | Three existing operations need one validated and authorized invocation path. |
+| `@bound/pi-adapter` | Earned | The capability boundary is tested and ready for an agent surface. |
+| `@bound/code-mode` | Earned | The sandbox ADR passes its decision gate. |
+| `apps/personal-ledger` | Earned | The CLI demonstrates the general-ledger agent path and the human workflow must use the same gateway. |
+| `@bound/trace` | Deferred | A second application consumer needs the same stable trace vocabulary. |
+| `@bound/testing` | Deferred | Two packages genuinely share fixtures or test runtime construction. |
+| Policy package | Deferred | At least two consumers need the same effective-dated policy behavior after the posting kernel is stable. |
+| Database package | Deferred | In-memory behavior is stable, product validation justifies persistence, and a migration/backup contract is documented. |
+| Provider package | Deferred | At least two application consumers need the same tested model-provider configuration rather than app-owned composition. |
 
 ## Immediate next task
 
-Document Phase 15 before changing code. The next boundary is the controlled
-general-ledger code-mode migration from Milestone 4: regenerate the bounded app
-proxy and compact declarations for the earned general-ledger catalog, add
-capability discovery, route every guest SDK call through the gateway, replace
-the legacy July-list evaluation, and re-run projection, sandbox, and resource
-limit evidence. Do not remove the legacy transaction surface or begin the
-visual comparison UI until the successor catalog, equivalence tests, migration
-criteria, and exit condition are written here.
+Implement Phase 15 in its documented order. Start with failing manifest and
+discovery tests in `@bound/code-mode`, then generate the gateway-filtered guest
+proxy from that manifest. Do not begin with the agent UI, persistence,
+ingestion, provider adapters, or legacy deletion. The first reviewable slice is
+complete when all eight general-ledger entries are validated, discoverable, and
+installed in the guest runtime while every existing sandbox test remains
+green.
