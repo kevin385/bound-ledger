@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import {
   useMutation,
@@ -57,6 +57,8 @@ function EventDetailPage() {
   const queryClient = useQueryClient()
   const [requestId, setRequestId] = useState(`reverse-${event.id}`)
   const [message, setMessage] = useState<string>()
+  const [isHydrated, setIsHydrated] = useState(false)
+  useEffect(() => setIsHydrated(true), [])
   const reversal = useMutation({
     mutationFn: () =>
       requestReversal({ data: { eventId: event.id, requestId } }).then(
@@ -173,7 +175,7 @@ function EventDetailPage() {
             <Button
               label="Request reversal"
               variant="secondary"
-              isDisabled={requestId.trim().length === 0}
+              isDisabled={!isHydrated || requestId.trim().length === 0}
               clickAction={async () => {
                 await reversal.mutateAsync()
               }}
