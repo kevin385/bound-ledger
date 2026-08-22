@@ -3,6 +3,7 @@ import { Effect, Schema } from "effect"
 import {
   AccountBalanceListSchema,
   ActivityReportSchema,
+  EventProposalListSchema,
   FinancialEventListSchema,
   FinancialEventSchema,
   KernelAuthorizationError,
@@ -21,6 +22,11 @@ import {
 } from "./capability.ts"
 
 export const ListAccountsInputSchema = Schema.Record(
+  Schema.String,
+  Schema.Never,
+)
+
+export const QueryProposalsInputSchema = Schema.Record(
   Schema.String,
   Schema.Never,
 )
@@ -49,6 +55,9 @@ export const TrialBalanceReportInputSchema = Schema.Struct({
 
 export type ListAccountsInput = Schema.Schema.Type<
   typeof ListAccountsInputSchema
+>
+export type QueryProposalsInput = Schema.Schema.Type<
+  typeof QueryProposalsInputSchema
 >
 export type GetEventInput = Schema.Schema.Type<typeof GetEventInputSchema>
 export type QueryEventsInput = Schema.Schema.Type<typeof QueryEventsInputSchema>
@@ -172,7 +181,8 @@ export const generalLedgerReadCapabilities: ReadonlyArray<CapabilityDefinition> 
     }),
     defineCapability({
       name: "reports.trial_balance",
-      description: "Return account balances and their signed total before an instant",
+      description:
+        "Return account balances and their signed total before an instant",
       kind: "read",
       input: TrialBalanceReportInputSchema,
       output: TrialBalanceSchema,
@@ -215,8 +225,25 @@ export const generalLedgerMutationCapabilities: ReadonlyArray<CapabilityDefiniti
     }),
   ])
 
+export const proposalReadCapabilities: ReadonlyArray<CapabilityDefinition> =
+  Object.freeze([
+    defineCapability({
+      name: "proposals.query",
+      description: "List readable unposted proposals in the active ledger",
+      kind: "read",
+      input: QueryProposalsInputSchema,
+      output: Schema.toType(EventProposalListSchema),
+      authorize: (_input, runtime) =>
+        authorizeActiveLedger("proposals.query", runtime),
+      execute: (_input, { kernel }) => kernel.queryProposals(),
+    }),
+  ])
+
 export const generalLedgerCapabilities: ReadonlyArray<CapabilityDefinition> =
   Object.freeze([
     ...generalLedgerReadCapabilities,
     ...generalLedgerMutationCapabilities,
   ])
+
+export const personalLedgerCapabilities: ReadonlyArray<CapabilityDefinition> =
+  Object.freeze([...generalLedgerCapabilities, ...proposalReadCapabilities])

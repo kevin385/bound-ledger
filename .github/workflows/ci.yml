@@ -40,3 +40,12 @@ jobs:
 
       - name: Check repository
         run: pnpm check
+
+      - name: Build personal ledger
+        run: pnpm build:personal-ledger
+
+      - name: Install Playwright browser
+        run: pnpm --filter @bound/personal-ledger exec playwright install --with-deps chromium
+
+      - name: Check personal-ledger browser flow
+        run: pnpm test:e2e

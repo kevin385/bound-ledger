@@ -7,6 +7,7 @@ import {
   type AccountBalance,
   type ActivityReport,
   type FinancialEvent,
+  type EventProposal,
   type LedgerAccount,
   type LedgerKernelService,
   type LedgerService,
@@ -71,6 +72,10 @@ type Invoke = {
     name: "events.post" | "events.reverse",
     input: unknown,
   ): Effect.Effect<FinancialEvent, CapabilityInvocationError>
+  (
+    name: "proposals.query",
+    input: unknown,
+  ): Effect.Effect<ReadonlyArray<EventProposal>, CapabilityInvocationError>
   (
     name: string,
     input: unknown,
@@ -326,12 +331,7 @@ export const makeCapabilityGatewayLayer = (
             .authorize(pending.decodedInput, runtime)
             .pipe(
               Effect.catch((error) =>
-                failConfirmation(
-                  pending,
-                  "authorization",
-                  "refused",
-                  error,
-                ),
+                failConfirmation(pending, "authorization", "refused", error),
               ),
             )
 
@@ -339,12 +339,7 @@ export const makeCapabilityGatewayLayer = (
             .execute(pending.decodedInput, runtime)
             .pipe(
               Effect.catch((error) =>
-                failConfirmation(
-                  pending,
-                  "execution",
-                  "authorized",
-                  error,
-                ),
+                failConfirmation(pending, "execution", "authorized", error),
               ),
             )
 
@@ -352,12 +347,7 @@ export const makeCapabilityGatewayLayer = (
             .decodeOutput(output)
             .pipe(
               Effect.catch((error) =>
-                failConfirmation(
-                  pending,
-                  "output",
-                  "authorized",
-                  error,
-                ),
+                failConfirmation(pending, "output", "authorized", error),
               ),
             )
 
@@ -404,23 +394,27 @@ export const makeCapabilityGatewayLayer = (
             )
           }
 
-          const decodedInput = yield* definition.decodeInput(input).pipe(
-            Effect.catch((error) =>
-              fail(definition, "input", "not_reached", error),
-            ),
-          )
-
-          yield* definition.authorize(decodedInput, runtime).pipe(
-            Effect.catch((error) =>
-              fail(
-                definition,
-                "authorization",
-                "refused",
-                error,
-                decodedInput,
+          const decodedInput = yield* definition
+            .decodeInput(input)
+            .pipe(
+              Effect.catch((error) =>
+                fail(definition, "input", "not_reached", error),
               ),
-            ),
-          )
+            )
+
+          yield* definition
+            .authorize(decodedInput, runtime)
+            .pipe(
+              Effect.catch((error) =>
+                fail(
+                  definition,
+                  "authorization",
+                  "refused",
+                  error,
+                  decodedInput,
+                ),
+              ),
+            )
 
           if (definition.agentAccess === "confirmation_required") {
             return yield* requestConfirmation(definition, decodedInput)
@@ -440,17 +434,13 @@ export const makeCapabilityGatewayLayer = (
               ),
             )
 
-          const decodedOutput = yield* definition.decodeOutput(output).pipe(
-            Effect.catch((error) =>
-              fail(
-                definition,
-                "output",
-                "authorized",
-                error,
-                decodedInput,
+          const decodedOutput = yield* definition
+            .decodeOutput(output)
+            .pipe(
+              Effect.catch((error) =>
+                fail(definition, "output", "authorized", error, decodedInput),
               ),
-            ),
-          )
+            )
 
           yield* record({
             name: definition.name,
