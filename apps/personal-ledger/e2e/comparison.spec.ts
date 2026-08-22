@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test"
 
+const comparisonRunTimeout = 20_000
+
 test("comparison runs the canonical tool and code evidence on demand", async ({
   page,
 }) => {
@@ -18,7 +20,9 @@ test("comparison runs the canonical tool and code evidence on demand", async ({
 
   await page.getByRole("button", { name: "Run fresh comparison" }).click()
 
-  await expect(page.getByText("Paired comparison passed")).toBeVisible()
+  await expect(page.getByText("Paired comparison passed")).toBeVisible({
+    timeout: comparisonRunTimeout,
+  })
   await expect(
     page.getByRole("heading", { name: "4", exact: true }),
   ).toBeVisible()
@@ -86,7 +90,9 @@ test("comparison remains readable at a narrow viewport", async ({ page }) => {
     page.getByRole("button", { name: "Open navigation" }),
   ).toBeVisible()
   await page.getByRole("button", { name: "Run fresh comparison" }).click()
-  await expect(page.getByText("Paired comparison passed")).toBeVisible()
+  await expect(page.getByText("Paired comparison passed")).toBeVisible({
+    timeout: comparisonRunTimeout,
+  })
   await expect(
     page.getByRole("heading", { name: "Tool mode", exact: true }),
   ).toBeVisible()

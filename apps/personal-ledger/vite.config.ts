@@ -12,5 +12,21 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  environments: {
+    nitro: {
+      build: {
+        rollupOptions: {
+          external: ["@bound/evaluation"],
+        },
+      },
+    },
+    ssr: {
+      build: {
+        rollupOptions: {
+          external: ["@bound/evaluation"],
+        },
+      },
+    },
+  },
   plugins: [tanstackStart({ srcDirectory: "src" }), react(), nitro()],
 })
