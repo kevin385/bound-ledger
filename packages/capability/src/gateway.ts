@@ -21,7 +21,11 @@ import {
   type CapabilityDefinition,
   type CapabilityInvocationError,
   type CapabilityMetadata,
+  type ConfirmationRequest,
+  ConfirmationContextChangedError,
+  ConfirmationRequiredError,
   DuplicateCapabilityError,
+  UnknownConfirmationError,
   UnknownCapabilityError,
 } from "./capability.ts"
 import { ledgerCapabilities } from "./ledger-capabilities.ts"
@@ -64,6 +68,10 @@ type Invoke = {
     input: unknown,
   ): Effect.Effect<TrialBalance, CapabilityInvocationError>
   (
+    name: "events.post" | "events.reverse",
+    input: unknown,
+  ): Effect.Effect<FinancialEvent, CapabilityInvocationError>
+  (
     name: string,
     input: unknown,
   ): Effect.Effect<unknown, CapabilityInvocationError>
@@ -72,6 +80,15 @@ type Invoke = {
 export interface CapabilityGatewayService {
   readonly capabilities: ReadonlyArray<CapabilityMetadata>
   readonly invoke: Invoke
+  readonly confirm: (
+    confirmationId: string,
+  ) => Effect.Effect<unknown, CapabilityInvocationError>
+  readonly reject: (
+    confirmationId: string,
+  ) => Effect.Effect<void, UnknownConfirmationError>
+  readonly pendingConfirmations: Effect.Effect<
+    ReadonlyArray<ConfirmationRequest>
+  >
   readonly attempts: Effect.Effect<ReadonlyArray<CapabilityAttempt>>
 }
 
@@ -80,6 +97,32 @@ export const CapabilityGateway = Context.Service<CapabilityGatewayService>(
 )
 
 const errorTag = (error: CapabilityInvocationError): string => error._tag
+
+interface PendingConfirmation {
+  readonly request: ConfirmationRequest
+  readonly definition: CapabilityDefinition
+  readonly decodedInput: unknown
+}
+
+const freezeDeep = (value: unknown): unknown => {
+  if (typeof value !== "object" || value === null || Object.isFrozen(value)) {
+    return value
+  }
+
+  for (const child of Object.values(value)) {
+    freezeDeep(child)
+  }
+
+  return Object.freeze(value)
+}
+
+const immutablePreview = (value: unknown): unknown => {
+  const serialized = JSON.stringify(value)
+
+  return serialized === undefined
+    ? undefined
+    : freezeDeep(JSON.parse(serialized) as unknown)
+}
 
 export const makeCapabilityGatewayLayer = (
   definitions: ReadonlyArray<CapabilityDefinition> = ledgerCapabilities,
@@ -93,6 +136,7 @@ export const makeCapabilityGatewayLayer = (
       const ledger = yield* Ledger
       const kernel = yield* LedgerKernel
       const session = yield* TrustedSession
+      const runtime = { ledger, kernel, session }
       const registry = new Map<string, CapabilityDefinition>()
 
       for (const definition of definitions) {
@@ -111,13 +155,43 @@ export const makeCapabilityGatewayLayer = (
             name: definition.name,
             description: definition.description,
             kind: definition.kind,
+            agentAccess: definition.agentAccess,
           }),
         ),
       )
 
       const attemptLog = yield* Ref.make<ReadonlyArray<CapabilityAttempt>>([])
+      const pendingConfirmations = yield* Ref.make<
+        ReadonlyMap<string, PendingConfirmation>
+      >(new Map())
+      const nextConfirmationSequence = yield* Ref.make(1)
       const record = (attempt: CapabilityAttempt) =>
         Ref.update(attemptLog, (current) => [...current, attempt])
+
+      const settleConfirmationAttempt = (
+        confirmationId: string,
+        patch: Partial<CapabilityAttempt>,
+      ) =>
+        Ref.update(attemptLog, (current) =>
+          current.map((attempt) =>
+            attempt.confirmationId === confirmationId
+              ? { ...attempt, ...patch }
+              : attempt,
+          ),
+        )
+
+      const takePendingConfirmation = (confirmationId: string) =>
+        Ref.modify(pendingConfirmations, (current) => {
+          const pending = current.get(confirmationId)
+
+          if (pending === undefined) {
+            return [undefined, current] as const
+          }
+
+          const next = new Map(current)
+          next.delete(confirmationId)
+          return [pending, next] as const
+        })
 
       const fail = (
         definition: CapabilityDefinition | undefined,
@@ -145,6 +219,175 @@ export const makeCapabilityGatewayLayer = (
           return yield* error
         })
 
+      const requestConfirmation = (
+        definition: CapabilityDefinition,
+        decodedInput: unknown,
+      ): Effect.Effect<never, CapabilityInvocationError> =>
+        Effect.gen(function* () {
+          const ledgerId = session.activeLedgerId
+
+          if (ledgerId === undefined) {
+            return yield* fail(
+              definition,
+              "authorization",
+              "refused",
+              new ConfirmationContextChangedError({
+                confirmationId: "unassigned",
+                actorId: session.actorId,
+              }),
+              decodedInput,
+            )
+          }
+
+          const sequence = yield* Ref.modify(
+            nextConfirmationSequence,
+            (current) => [current, current + 1] as const,
+          )
+          const confirmationId = `confirmation_${String(sequence).padStart(3, "0")}`
+          const request = Object.freeze<ConfirmationRequest>({
+            id: confirmationId,
+            capabilityName: definition.name,
+            actorId: session.actorId,
+            ledgerId,
+            decodedInput: immutablePreview(decodedInput),
+          })
+
+          yield* Ref.update(pendingConfirmations, (current) => {
+            const next = new Map(current)
+            next.set(confirmationId, {
+              request,
+              definition,
+              decodedInput,
+            })
+            return next
+          })
+          yield* record({
+            name: definition.name,
+            actorId: session.actorId,
+            kind: definition.kind,
+            decodedInput: request.decodedInput,
+            authorization: "authorized",
+            outcome: "pending",
+            stage: "confirmation",
+            confirmationId,
+            confirmation: "pending",
+          })
+
+          return yield* new ConfirmationRequiredError({ request })
+        })
+
+      const failConfirmation = (
+        pending: PendingConfirmation,
+        stage: CapabilityAttempt["stage"],
+        authorization: CapabilityAuthorization,
+        error: CapabilityInvocationError,
+      ): Effect.Effect<never, CapabilityInvocationError> =>
+        Effect.gen(function* () {
+          yield* settleConfirmationAttempt(pending.request.id, {
+            authorization,
+            outcome: "failed",
+            stage,
+            confirmation: "approved",
+            errorTag: errorTag(error),
+          })
+
+          return yield* error
+        })
+
+      const confirm = (
+        confirmationId: string,
+      ): Effect.Effect<unknown, CapabilityInvocationError> =>
+        Effect.gen(function* () {
+          const pending = yield* takePendingConfirmation(confirmationId)
+
+          if (pending === undefined) {
+            return yield* new UnknownConfirmationError({ confirmationId })
+          }
+
+          if (
+            pending.request.actorId !== session.actorId ||
+            pending.request.ledgerId !== session.activeLedgerId
+          ) {
+            return yield* failConfirmation(
+              pending,
+              "authorization",
+              "refused",
+              new ConfirmationContextChangedError({
+                confirmationId,
+                actorId: session.actorId,
+                ...(session.activeLedgerId === undefined
+                  ? {}
+                  : { ledgerId: session.activeLedgerId }),
+              }),
+            )
+          }
+
+          yield* pending.definition
+            .authorize(pending.decodedInput, runtime)
+            .pipe(
+              Effect.catch((error) =>
+                failConfirmation(
+                  pending,
+                  "authorization",
+                  "refused",
+                  error,
+                ),
+              ),
+            )
+
+          const output = yield* pending.definition
+            .execute(pending.decodedInput, runtime)
+            .pipe(
+              Effect.catch((error) =>
+                failConfirmation(
+                  pending,
+                  "execution",
+                  "authorized",
+                  error,
+                ),
+              ),
+            )
+
+          const decodedOutput = yield* pending.definition
+            .decodeOutput(output)
+            .pipe(
+              Effect.catch((error) =>
+                failConfirmation(
+                  pending,
+                  "output",
+                  "authorized",
+                  error,
+                ),
+              ),
+            )
+
+          yield* settleConfirmationAttempt(confirmationId, {
+            authorization: "authorized",
+            outcome: "succeeded",
+            stage: "complete",
+            confirmation: "approved",
+          })
+
+          return decodedOutput
+        })
+
+      const reject = (
+        confirmationId: string,
+      ): Effect.Effect<void, UnknownConfirmationError> =>
+        Effect.gen(function* () {
+          const pending = yield* takePendingConfirmation(confirmationId)
+
+          if (pending === undefined) {
+            return yield* new UnknownConfirmationError({ confirmationId })
+          }
+
+          yield* settleConfirmationAttempt(confirmationId, {
+            outcome: "rejected",
+            stage: "confirmation",
+            confirmation: "rejected",
+          })
+        })
+
       const invokeUnknown = (
         name: string,
         input: unknown,
@@ -167,8 +410,6 @@ export const makeCapabilityGatewayLayer = (
             ),
           )
 
-          const runtime = { ledger, kernel, session }
-
           yield* definition.authorize(decodedInput, runtime).pipe(
             Effect.catch((error) =>
               fail(
@@ -180,6 +421,10 @@ export const makeCapabilityGatewayLayer = (
               ),
             ),
           )
+
+          if (definition.agentAccess === "confirmation_required") {
+            return yield* requestConfirmation(definition, decodedInput)
+          }
 
           const output = yield* definition
             .execute(decodedInput, runtime)
@@ -223,6 +468,13 @@ export const makeCapabilityGatewayLayer = (
       return {
         capabilities,
         invoke: invokeUnknown as Invoke,
+        confirm,
+        reject,
+        pendingConfirmations: Ref.get(pendingConfirmations).pipe(
+          Effect.map((pending) =>
+            [...pending.values()].map((entry) => entry.request),
+          ),
+        ),
         attempts: Ref.get(attemptLog).pipe(
           Effect.map((attempts) => [...attempts]),
         ),

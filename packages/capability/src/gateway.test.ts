@@ -103,6 +103,7 @@ describe("CapabilityGateway", () => {
               name: "test.registry_authority",
               description: "Prove the configured registry is authoritative",
               kind: "mutation",
+              agentAccess: "direct",
             },
           ])
           expect(Object.isFrozen(gateway.capabilities)).toBe(true)
@@ -113,6 +114,7 @@ describe("CapabilityGateway", () => {
               name: "test.injected",
               description: "Must not reach the registry",
               kind: "read",
+              agentAccess: "direct",
             }),
           ).toThrow(TypeError)
           expect(() => {
@@ -124,6 +126,7 @@ describe("CapabilityGateway", () => {
               name: "test.registry_authority",
               description: "Prove the configured registry is authoritative",
               kind: "mutation",
+              agentAccess: "direct",
             },
           ])
         }),

@@ -9,17 +9,20 @@ import type {
 } from "@bound/ledger"
 
 export type CapabilityKind = "read" | "mutation"
+export type CapabilityAgentAccess = "direct" | "confirmation_required"
 
 export interface CapabilityMetadata {
   readonly name: string
   readonly description: string
   readonly kind: CapabilityKind
+  readonly agentAccess: CapabilityAgentAccess
 }
 
 export type CapabilityAttemptStage =
   | "lookup"
   | "input"
   | "authorization"
+  | "confirmation"
   | "execution"
   | "output"
   | "complete"
@@ -29,14 +32,29 @@ export type CapabilityAuthorization =
   | "authorized"
   | "refused"
 
+export type CapabilityConfirmation =
+  | "pending"
+  | "approved"
+  | "rejected"
+
+export interface ConfirmationRequest {
+  readonly id: string
+  readonly capabilityName: string
+  readonly actorId: string
+  readonly ledgerId: string
+  readonly decodedInput: unknown
+}
+
 export interface CapabilityAttempt {
   readonly name: string
   readonly actorId: string
   readonly kind?: CapabilityKind
   readonly decodedInput?: unknown
   readonly authorization: CapabilityAuthorization
-  readonly outcome: "succeeded" | "failed"
+  readonly outcome: "succeeded" | "failed" | "pending" | "rejected"
   readonly stage: CapabilityAttemptStage
+  readonly confirmationId?: string
+  readonly confirmation?: CapabilityConfirmation
   readonly errorTag?: string
 }
 
@@ -66,10 +84,33 @@ export class InvalidCapabilityOutputError extends Data.TaggedError(
   readonly details: string
 }> {}
 
+export class ConfirmationRequiredError extends Data.TaggedError(
+  "ConfirmationRequiredError",
+)<{
+  readonly request: ConfirmationRequest
+}> {}
+
+export class UnknownConfirmationError extends Data.TaggedError(
+  "UnknownConfirmationError",
+)<{
+  readonly confirmationId: string
+}> {}
+
+export class ConfirmationContextChangedError extends Data.TaggedError(
+  "ConfirmationContextChangedError",
+)<{
+  readonly confirmationId: string
+  readonly actorId: string
+  readonly ledgerId?: string
+}> {}
+
 export type CapabilityInvocationError =
   | UnknownCapabilityError
   | InvalidCapabilityInputError
   | InvalidCapabilityOutputError
+  | ConfirmationRequiredError
+  | UnknownConfirmationError
+  | ConfirmationContextChangedError
   | CapabilityDomainError
 
 export type CapabilityDomainError = LedgerMutationError | KernelAppendError
@@ -84,6 +125,7 @@ export interface CapabilityDefinition {
   readonly name: string
   readonly description: string
   readonly kind: CapabilityKind
+  readonly agentAccess: CapabilityAgentAccess
   readonly inputSchema: Schema.Decoder<unknown, never>
   readonly outputSchema: Schema.Decoder<unknown, never>
   readonly decodeInput: (
@@ -106,6 +148,7 @@ export interface CapabilitySpec<Input, Output> {
   readonly name: string
   readonly description: string
   readonly kind: CapabilityKind
+  readonly agentAccess?: CapabilityAgentAccess
   readonly input: Schema.Decoder<Input, never>
   readonly output: Schema.Decoder<Output, never>
   readonly authorize: (
@@ -130,6 +173,7 @@ export const defineCapability = <Input, Output>(
   name: spec.name,
   description: spec.description,
   kind: spec.kind,
+  agentAccess: spec.agentAccess ?? "direct",
   inputSchema: spec.input,
   outputSchema: spec.output,
   decodeInput: (input) =>

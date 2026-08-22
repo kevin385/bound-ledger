@@ -31,6 +31,7 @@ evals/results      checked-in paired evaluation summary
 pnpm install
 pnpm start
 pnpm demo:ledger-read
+pnpm demo:ledger-confirmation
 pnpm eval:july-list
 pnpm check
 ```
@@ -45,6 +46,10 @@ an API key.
 through the shared capability gateway. It prints readable accounts, July posted
 activity and expenses, balances, trial balance, and structured attempts without
 using an agent projection.
+`pnpm demo:ledger-confirmation` demonstrates the trusted mutation boundary. It
+rejects one pending post, then approves an exact post, reversal, and balanced
+replacement while printing their settled structured attempts. Confirmation is
+owned by the gateway runtime and is not exposed as an agent tool.
 `pnpm eval:july-list` runs the versioned July listing task once per mode from
 fresh fixture state, applies deterministic correctness and safety checks, and
 prints the paired metrics and comparison. The checked-in sample result is in

@@ -77,7 +77,14 @@ const listCapability = Object.freeze({
   name: "transactions.list",
   description: "List readable transactions for a calendar month",
   kind: "read" as const,
+  agentAccess: "direct" as const,
 })
+
+const unusedConfirmationGateway = {
+  confirm: () => Effect.die(new Error("Confirmation is not used in this test")),
+  reject: () => Effect.die(new Error("Confirmation is not used in this test")),
+  pendingConfirmations: Effect.succeed([]),
+}
 
 describe("executeCode", () => {
   it("rejects invalid limit configuration through the promise API", async () => {
@@ -211,6 +218,7 @@ describe("executeCode", () => {
   it("re-authorizes every call and returns refusals as guest errors", async () => {
     let calls = 0
     const gateway: CapabilityGatewayService = {
+      ...unusedConfirmationGateway,
       capabilities: [listCapability],
       invoke: invoke(() => {
         calls += 1
@@ -256,6 +264,7 @@ describe("executeCode", () => {
       input: { transactionId: "txn_001", category: "shopping" },
     }
     const gateway: CapabilityGatewayService = {
+      ...unusedConfirmationGateway,
       capabilities: [listCapability],
       invoke: invoke(() => {
         calls += 1
@@ -281,6 +290,7 @@ describe("executeCode", () => {
       invocationStarted = resolve
     })
     const gateway: CapabilityGatewayService = {
+      ...unusedConfirmationGateway,
       capabilities: [listCapability],
       invoke: invoke(() => {
         invocationStarted?.()
