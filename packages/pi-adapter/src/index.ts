@@ -2,6 +2,7 @@ export {
   runLedgerAgentPrompt,
   translatePiEvent,
   type LedgerAgentEvent,
+  type LedgerAgentControl,
   type LedgerAgentMode,
   type LedgerAgentOptions,
   type LedgerAgentRunResult,
@@ -19,3 +20,8 @@ export {
   type CapabilityToolDetails,
   type LedgerCapabilityName,
 } from "./tools.ts"
+export {
+  projectGeneralLedgerTools,
+  type GeneralLedgerCapabilityName,
+  type GeneralLedgerToolDetails,
+} from "./general-ledger-tools.ts"
