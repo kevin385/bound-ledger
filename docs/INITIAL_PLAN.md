@@ -9,8 +9,8 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 18 planned — complete the 20-task deterministic
-conformance corpus. Phase 17 is complete and verified; Phase 18 is the next
+**Current phase:** Phase 19 planned — add the opt-in provider-neutral model
+evaluation pilot. Phase 18 is complete and verified; Phase 19 is the next
 implementation boundary.
 
 ## Purpose
@@ -26,8 +26,9 @@ operations through the gateway and Pi tool mode, and added the governed human
 application. Phase 15 migrated the controlled code-mode proof to that same
 general-ledger catalog. Phase 16 exposed the already-earned comparison evidence
 visually. Phase 17 widened that deterministic evidence to five paired tasks.
-Phase 18 now completes the deterministic conformance corpus before persistence,
-ingestion, or provider choice.
+Phase 18 completed the 20-task deterministic conformance corpus. Phase 19 now
+earns the smallest application-owned provider configuration and opt-in model
+evaluation pilot before persistence, ingestion, or product expansion.
 
 ## Project naming
 
@@ -1756,7 +1757,7 @@ attempt, authorization, confirmation-stage, state, confirmation-control, and
 aggregate drift. `pnpm eval:suite` and the checked-in v1 result reproduce the
 evidence without an API key, live model, or trusted confirmation execution.
 
-## Phase 18 — Complete the 20-task deterministic conformance corpus
+## Phase 18 — Complete the 20-task deterministic conformance corpus (complete)
 
 Five tasks establish the suite shape but still leave the general-ledger
 boundary under-sampled. Complete the deterministic corpus before introducing
@@ -1872,6 +1873,166 @@ safety, attempt, and state invariants from fresh state; one aggregate command
 and checked-in result expose all coverage and limitations; and every Phase
 1–17 check remains green.
 
+### Completion evidence
+
+Completed on 2026-08-24. `@bound/evaluation` now owns a deeply immutable,
+ordered 20-task v2 registry with the exact `10/4/6` successful-read,
+confirmation-required, and refused/invalid distribution. The paired fixed-tool
+and controlled-code runners cover all eight manifest operations with 26
+authoritative attempts per mode: 16 complete, 4 confirmation, 3 input, and 3
+authorization. Four pending programs terminate before catch or continuation;
+six failed tasks create no pending confirmation, make no event-count change,
+and return only normalized `status`, `code`, and `stage` fields. Unbalanced
+posts are rejected during gateway input decoding before confirmation.
+
+All 20 tasks and both modes pass exact result, attempt, pending, state,
+redaction, size, and equivalence checks. The aggregate is a conjunction and
+reports task IDs plus invariant names on failure. Scorer mutations exercise
+every mode invariant and prove one failure cannot hide behind 19 passes. The v1
+task IDs and checked result remain byte-stable. `pnpm eval:suite:v2` reproduces
+the checked-in matrix without a model, network call, API key, or trusted
+confirmation execution.
+
+## Phase 19 — Add an opt-in provider-neutral model evaluation pilot
+
+The deterministic corpus now establishes the application boundary, but it says
+nothing about whether real models reliably select tools, write bounded code,
+respect confirmation language, or expose useful usage evidence. Earn the
+smallest application-owned model configuration and opt-in pilot before any
+provider UI, persistence, ingestion, or self-hosting work.
+
+### Configuration boundary
+
+Keep configuration in `apps/cli`; do not create a provider package. Decode one
+closed, versioned configuration shape:
+
+```ts
+interface ModelConfigurationV1 {
+  id: string;
+  provider: string;
+  model: string;
+  endpointKind: "native" | "openai_compatible" | "local";
+  supportsTools: boolean;
+  supportsCodeMode: boolean;
+  baseUrlEnvironmentVariable?: string;
+  apiKeyEnvironmentVariable?: string;
+}
+```
+
+Configuration files contain environment-variable names, never secret values or
+base URLs. The CLI composition root resolves only an explicit allowlist of
+environment variables, validates HTTPS for remote endpoints and loopback hosts
+for local endpoints, and passes resolved provider state only to Pi AI. Secrets,
+URLs, actor identity, trusted session, ledger/account identifiers, and
+disclosure choices must never enter prompts, tool arguments, generated code,
+traces, thrown messages, or checked-in results.
+
+Every run requires `BOUND_LEDGER_LIVE_EVAL=1` plus an explicit configuration
+path. Missing opt-in, unsupported mode, missing environment data, malformed
+configuration, remote plain HTTP, or a non-loopback `local` endpoint fails
+before a provider or ledger runtime is created. Ordinary commands and CI remain
+network-free.
+
+### Pilot task and trial contract
+
+Use an immutable six-task subset of v2 by ID:
+
+1. `general-ledger-reconciliation`;
+2. `event-detail-selection`;
+3. `august-close-composition`;
+4. `expense-post-confirmation`;
+5. `closed-input-authority-injection`;
+6. `unknown-event-reversal`.
+
+Run each supported mode at least three times per configuration from fresh
+`sample-kernel-v1` state. Reuse the v2 expected facts, attempts, normalization,
+state, pending, redaction, and conjunction scorers; do not weaken the corpus to
+accommodate a model. Record per trial:
+
+- configuration ID, provider/model labels, endpoint kind, mode, task ID, and
+  application revision;
+- completed/refused/invalid/pending status and failed invariant names;
+- model turns, outer calls, inner capability calls, invalid and blocked calls,
+  confirmations, duration, input/output tokens when supplied, and estimated
+  cost only when the configuration supplies a documented price;
+- provider cancellation, streaming, malformed-output, unavailable-tool, usage,
+  and rate-limit failures in one small sanitized vocabulary.
+
+Summaries must publish sample size, pass count, rate, median, range, and observed
+failures per task/mode/configuration. Do not average correctness or safety into
+a passing score. A configuration that does not support one mode is reported as
+unsupported, never silently compared.
+
+### Deterministic tests and manual evidence
+
+- decode valid native, OpenAI-compatible, and local configuration examples and
+  reject unknown keys or inconsistent support flags;
+- prove opt-in and endpoint policy fail before provider construction;
+- use scripted provider streams to cover success, tool calls, code calls,
+  cancellation, malformed output, missing usage, and structured provider
+  failure without network access;
+- prove resolved secrets and URLs never appear in prompts, events, summaries,
+  logs, or normalized errors;
+- prove the exact six-task registry references v2 tasks without copying or
+  mutating their contracts;
+- prove repeated trials always start from fresh state and one failed trial is
+  visible in the aggregate;
+- keep both deterministic suites, the comparison route, build, browser flows,
+  and sandbox probes green.
+
+Check in a safe example matrix and a result template. A manually produced
+local or hosted result may be committed only when it contains synthetic fixture
+data, sanitized configuration labels, full sample sizes, and no credentials or
+endpoints. Live results are useful evidence but are not required for CI or the
+phase gate because external accounts and models are not repository-controlled.
+
+### Expected files
+
+```text
+apps/cli/src/model-configuration.ts
+apps/cli/src/model-configuration.test.ts
+apps/cli/src/evaluate-live-models.ts
+apps/cli/src/evaluate-live-models.test.ts
+evals/configs/live-model-matrix.example.json
+evals/results/live-model-pilot-template.md
+docs/LIVE_MODEL_EVALUATION.md
+package.json
+README.md
+docs/INITIAL_PLAN.md
+```
+
+### Non-goals
+
+- No provider package, browser model selector, chat UI, saved configuration,
+  credential store, model download, model server, or automatic endpoint scan.
+- No live network call in tests, ordinary CI, deterministic evaluations, build,
+  application server, or browser workflow.
+- No real financial data, persistence, import, bank connection, deployment,
+  multi-user behavior, or self-hosting installer.
+- No model-callable confirmation approval/rejection, editable task prompt, or
+  user-supplied generated program in the personal-ledger application.
+- No claim that one model, endpoint, or short pilot establishes general mode
+  superiority, production safety, or product value.
+
+### Verification
+
+```sh
+pnpm check
+pnpm start
+pnpm eval:general-ledger
+pnpm eval:suite
+pnpm eval:suite:v2
+pnpm eval:live -- --config evals/configs/live-model-matrix.example.json --dry-run
+pnpm build:personal-ledger
+pnpm test:e2e
+```
+
+**Exit condition:** a closed application-owned configuration safely represents
+native, OpenAI-compatible, and local endpoints; the exact six-task, three-trial
+pilot reuses v2 scorers; fake-provider tests prove streaming, failure, opt-in,
+endpoint, and non-disclosure behavior without network access; a dry run is
+reproducible; and every Phase 1–18 gate remains green.
+
 ## Packages that must earn their existence
 
 | Boundary               | Status   | Add when                                                                                                                |
@@ -1889,11 +2050,13 @@ and checked-in result expose all coverage and limitations; and every Phase
 
 ## Immediate next task
 
-Implement Phase 18 in its documented order. Start with the exact 20-task
-coverage matrix and immutable v2 registry, then add normalized refused/invalid
-outcomes and scorer mutation tests before implementing all runners. Preserve v1
-and the Phase 16 browser projection unchanged. Do not begin with live models,
-editable prompts, persistence, ingestion, provider adapters, new capabilities,
-or trusted confirmation execution. The first reviewable slice is complete when
-the registry proves exact `10/4/6` distribution and unique semantic coverage,
-and normalized error tests prove trusted context cannot cross into results.
+Implement Phase 19 in its documented order. Start with the closed model
+configuration, explicit opt-in, endpoint policy, and secret non-disclosure tests;
+then bind the exact six-task v2 subset and repeated-trial aggregate before
+adding the manual live command. Keep provider configuration in `apps/cli` and
+all default commands network-free. Do not begin with a browser selector,
+credential storage, persistence, ingestion, self-hosting, or trusted
+confirmation execution. The first reviewable slice is complete when native,
+OpenAI-compatible, and local configurations decode safely and fake-provider
+tests prove secrets and endpoints cannot cross into model-visible or recorded
+state.

@@ -38,12 +38,15 @@ future evidence-gated work.
   superseded historical predecessor;
 - a closed five-task paired evaluation suite covering three read-only outcomes
   and two immutable pending-confirmation stops from fresh state;
+- an immutable 20-task conformance corpus covering all eight operations with
+  10 successful reads, 4 pending confirmations, and 6 refused or invalid
+  requests through paired tool and controlled-code runners;
 - a read-only visual comparison workbench that reruns the canonical evaluation
   from fresh state and shows the shared facts, scores, gateway attempts, and
   `3`-versus-`1` outer-call difference without exposing trusted context.
 
-Phase 17 completed the five-task deterministic paired evaluation suite. Phase
-18 is planned as the 20-task deterministic conformance corpus; see
+Phase 18 completed the 20-task deterministic conformance corpus. Phase 19 is
+planned as the smallest opt-in, provider-neutral live-model evaluation pilot; see
 [`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md) for its scope and gates.
 
 ```text
@@ -73,6 +76,7 @@ pnpm demo:ledger-confirmation
 pnpm demo:ledger-agent
 pnpm eval:general-ledger
 pnpm eval:suite
+pnpm eval:suite:v2
 pnpm dev:personal-ledger
 pnpm check
 ```
@@ -108,6 +112,12 @@ fixture state. The aggregate fails closed on any result, answer, attempt,
 authorization, confirmation, state, or mode-equivalence failure. The checked-in
 result is in
 [`evals/results/general-ledger-suite-v1.md`](evals/results/general-ledger-suite-v1.md).
+`pnpm eval:suite:v2` runs the immutable 20-task corpus directly through the
+fixed general-ledger tool projection and controlled code bridge. It covers all
+eight manifest operations and fails closed on registry, distribution, exact
+result, normalized failure, attempt-stage, pending-confirmation, state,
+redaction, or mode-equivalence drift. The checked-in result is in
+[`evals/results/general-ledger-suite-v2.md`](evals/results/general-ledger-suite-v2.md).
 `pnpm dev:personal-ledger` starts the local TanStack Start application. Its
 dashboard, event journal/detail, immutable proposal review, expense/reversal
 confirmation controls, and deterministic reset all use the same
@@ -128,16 +138,17 @@ Bound Ledger is pre-alpha research software. It is not a production security
 boundary and should not process real financial data or untrusted generated
 code.
 
-Phase 17 is complete. It added one immutable five-task registry, fresh-state
-paired runners, exact correctness and safety scorers, fail-closed aggregation,
-two executable pending-confirmation continuation probes, and a checked-in
-reproducible result while preserving the Phase 16 route and original command.
+Phase 18 is complete. It added the immutable 20-task v2 registry, exact
+`10/4/6` outcome distribution, all-operation and attempt-stage coverage,
+normalized redacted failures, four executable confirmation-stop probes,
+conjunction-only aggregation, and checked-in reproducible evidence while
+keeping the v1 suite byte-stable.
 
-Phase 18 is planned and is the only authorized next implementation phase. It
-expands the deterministic corpus to 20 distinct tasks across successful reads,
-pending confirmations, and refused or invalid requests before live-model work.
-It does not add provider selection, persistence, ingestion, bank connectivity,
-or autonomous finance behavior.
+Phase 19 is planned and is the only authorized next implementation phase. It
+earns a small application-owned model configuration and opt-in live-model
+evaluation pilot without adding a provider package, browser selector, stored
+secrets, persistence, ingestion, bank connectivity, or autonomous finance
+behavior.
 
 Please report security issues through GitHub's private vulnerability reporting
 flow described in [SECURITY.md](SECURITY.md).

@@ -161,6 +161,28 @@ must match except for diagnostic duration. This evidence broadens the pinned
 local contract; it does not prove production isolation or make the scripted
 faux provider representative of a live model.
 
+## Phase 18 deterministic corpus contract
+
+The version-2 corpus runs 20 immutable tasks through the concrete tool
+projection and the controlled code bridge with separately decoded fixture,
+gateway, session, pending-confirmation, and subprocess state. All eight
+manifest operations receive coverage. Structurally valid but unbalanced posts
+are now rejected during gateway input decoding, before authorization or a
+confirmation preview can exist.
+
+Failure normalization is evaluation-owned and deliberately small. Model-facing
+results contain only `status`, `code`, and `stage`; actor, workspace, ledger,
+account-permission, raw-schema, error-tag, host, stack, and environment details
+remain in trusted execution state. Six failure tasks prove input and
+authorization failures create no pending confirmation and no event-count
+delta. Four mutation programs contain catch and continuation branches, but the
+parent terminates at the first immutable confirmation request.
+
+The aggregate requires all 20 task and paired-mode checks to pass. A failed
+task cannot be hidden by averages or the other 19 results. This expands local
+conformance evidence; it does not make QuickJS a production isolation boundary
+or establish live-model behavior.
+
 ## Executable evidence
 
 [`experiments/sandbox/runtime-comparison.test.ts`](../experiments/sandbox/runtime-comparison.test.ts)
@@ -218,6 +240,13 @@ attempt and state equivalence, immutable pending previews, unavailable
 confirmation control, confirmation-stage termination, and fail-closed task and
 aggregate scorers. The checked-in result records three completed read tasks and
 two pending mutation tasks without an append.
+
+[`packages/evaluation/src/suite-v2.test.ts`](../packages/evaluation/src/suite-v2.test.ts)
+verifies the exact `10/4/6` registry distribution, all-operation coverage,
+repeatability, paired attempts and state, immutable confirmation termination,
+redacted refused/invalid results, every mode-scorer invariant,
+conjunction-only aggregation, and the byte-stability of v1 task IDs and checked
+evidence. The checked-in v2 result records all 20 outcomes and limitations.
 
 The bridge exposes a pure guest-side generator SDK. SDK calls yield serialized
 requests; the parent invokes the gateway and resumes the same generator with a

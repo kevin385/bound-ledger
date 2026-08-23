@@ -10,7 +10,7 @@ implementation work.
 The product and repository are named **Bound Ledger**. Workspace packages keep
 the `@bound/*` namespace.
 
-Implementation status: Phase 17 is complete; Phase 18 is fully specified in
+Implementation status: Phase 18 is complete; Phase 19 is fully specified in
 `docs/INITIAL_PLAN.md` and is the next code boundary.
 
 > Let agents code inside your application—without coding around its rules.
@@ -1209,6 +1209,7 @@ migrated discovery, the generated guest SDK, confirmation termination, and the
 paired evaluation to the earned general-ledger catalog. Phase 16 made that
 deterministic evidence visually inspectable through one bounded, redacted,
 read-only comparison workbench. Phase 17 broadened the deterministic comparison
-to five versioned tasks, including two confirmation-stop probes. Phase 18 is
-the next planned boundary: complete the 20-task deterministic conformance
-corpus before persistence, ingestion, provider choice, or product expansion.
+to five versioned tasks, including two confirmation-stop probes. Phase 18
+completed the 20-task deterministic conformance corpus. Phase 19 is the next
+planned boundary: earn the smallest opt-in provider-neutral model evaluation
+pilot before persistence, ingestion, self-hosting, or product expansion.

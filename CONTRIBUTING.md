@@ -19,14 +19,14 @@ Use the ownership and non-goals declared by the current phase. Do not add a
 package, agent, cloud resource, database, UI, or sandbox until the corresponding
 phase gate is complete.
 
-Phase 17 is complete. Phase 18 is currently planned. Contributions should
-begin by defining the 20-task coverage matrix and version-2 registry invariants,
-then add successful-read, pending-confirmation, and refused/invalid cases in
-small scored slices. Keep the five-task v1 suite, original reconciliation, and
-`/comparison` route backward compatible. Do not add live models, editable
-prompts or generated-program input, persistence, CSV/bank ingestion,
-model-provider adapters, API-key storage, self-hosting infrastructure, or
-trusted confirmation execution as part of Phase 18.
+Phase 18 is complete. Phase 19 is currently planned. Contributions should
+begin with the application-owned model-configuration decoder, disclosure and
+secret-handling contract, and deterministic fake-provider tests before adding
+the opt-in six-task live evaluation runner. Keep both deterministic suites,
+ordinary CI, and the `/comparison` route provider-free. Do not add a provider
+package, browser model selector, stored credentials, persistence, CSV/bank
+ingestion, self-hosting infrastructure, or trusted confirmation execution as
+part of Phase 19.
 
 ## Development
 
