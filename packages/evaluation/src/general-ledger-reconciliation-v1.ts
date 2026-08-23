@@ -1,30 +1,12 @@
 import { performance } from "node:perf_hooks"
 
-import { Effect, Layer } from "effect"
+import { Effect } from "effect"
 
-import {
-  CapabilityGateway,
-  generalLedgerCapabilities,
-  makeCapabilityGatewayLayer,
-  type CapabilityAttempt,
-  type CapabilityGatewayService,
-} from "@bound/capability"
+import { type CapabilityAttempt } from "@bound/capability"
 import {
   RECONCILE_JULY_GENERAL_LEDGER_PROGRAM,
   type CodeModeRunResult,
 } from "@bound/code-mode"
-import {
-  decodeFixtureAccounts,
-  decodeFixtureTransactions,
-  decodeKernelFixture,
-  makeInMemoryLedgerKernelLayer,
-  makeInMemoryLedgerLayer,
-  makeTrustedSessionLayer,
-  sampleAccountsFixture,
-  sampleKernelFixture,
-  sampleTransactionsFixture,
-  type Session,
-} from "@bound/ledger"
 import { runLedgerAgentPrompt } from "@bound/pi-adapter"
 import {
   createModels,
@@ -36,6 +18,7 @@ import {
 } from "@earendil-works/pi-ai"
 
 import { GENERAL_LEDGER_RECONCILIATION_TASK_V1 } from "./task.ts"
+import { makeFreshEvaluationGateway } from "./runtime.ts"
 
 export interface ReconciliationFacts {
   readonly eventCount: number
@@ -96,59 +79,6 @@ export interface GeneralLedgerReconciliationSummary {
 export class GeneralLedgerEvaluationError extends Error {
   override readonly name = "GeneralLedgerEvaluationError"
 }
-
-const primaryAccountIds = [
-  "acct_checking",
-  "acct_cash",
-  "acct_receivable",
-  "acct_investment",
-  "acct_credit",
-  "acct_loan",
-  "acct_equity",
-  "acct_income",
-  "acct_groceries",
-  "acct_utilities",
-] as const
-
-const session: Session = {
-  actorId: "actor_primary_owner",
-  activeWorkspaceId: "workspace_primary",
-  activeLedgerId: "ledger_primary",
-  readableAccountIds: new Set(primaryAccountIds),
-  mutableAccountIds: new Set(primaryAccountIds),
-}
-
-const makeFreshGateway = (): Promise<CapabilityGatewayService> =>
-  Effect.runPromise(
-    Effect.gen(function* () {
-      const transactions = yield* decodeFixtureTransactions(
-        sampleTransactionsFixture,
-      )
-      const accounts = yield* decodeFixtureAccounts(sampleAccountsFixture)
-      const fixture = yield* decodeKernelFixture(sampleKernelFixture)
-      const sessionLayer = makeTrustedSessionLayer(session)
-      const ledgerLayer = makeInMemoryLedgerLayer(transactions, accounts).pipe(
-        Layer.provide(sessionLayer),
-      )
-      const kernelLayer = makeInMemoryLedgerKernelLayer({
-        currency: fixture.currency,
-        accounts: fixture.accounts,
-        events: fixture.events,
-        proposals: fixture.proposals,
-      }).pipe(Layer.provide(sessionLayer))
-      const gatewayLayer = makeCapabilityGatewayLayer(
-        generalLedgerCapabilities,
-      ).pipe(
-        Layer.provide(
-          Layer.merge(Layer.merge(ledgerLayer, kernelLayer), sessionLayer),
-        ),
-      )
-
-      return yield* CapabilityGateway.use((gateway) =>
-        Effect.succeed(gateway),
-      ).pipe(Effect.provide(gatewayLayer))
-    }),
-  )
 
 const sameJson = (left: unknown, right: unknown): boolean =>
   JSON.stringify(left) === JSON.stringify(right)
@@ -282,7 +212,7 @@ const factsFromToolResults = (context: Context): ReconciliationFacts => {
 const runMode = async (
   mode: "tool" | "code",
 ): Promise<ReconciliationModeResult> => {
-  const gateway = await makeFreshGateway()
+  const gateway = await makeFreshEvaluationGateway()
   const faux = fauxProvider({
     provider: `bound-ledger-eval-general-ledger-v1-${mode}`,
     tokenSize: {

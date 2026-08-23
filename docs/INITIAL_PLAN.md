@@ -9,8 +9,8 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 17 planned — broaden the deterministic paired
-evaluation suite. Phase 16 is complete and verified; Phase 17 is the next
+**Current phase:** Phase 18 planned — complete the 20-task deterministic
+conformance corpus. Phase 17 is complete and verified; Phase 18 is the next
 implementation boundary.
 
 ## Purpose
@@ -25,7 +25,8 @@ that domain foundation with the general-ledger kernel, moved its earned
 operations through the gateway and Pi tool mode, and added the governed human
 application. Phase 15 migrated the controlled code-mode proof to that same
 general-ledger catalog. Phase 16 exposed the already-earned comparison evidence
-visually. Phase 17 now widens that deterministic evidence before persistence,
+visually. Phase 17 widened that deterministic evidence to five paired tasks.
+Phase 18 now completes the deterministic conformance corpus before persistence,
 ingestion, or provider choice.
 
 ## Project naming
@@ -1621,7 +1622,7 @@ confirmation control, and host errors and is rejected above 64 KiB. Unit,
 build, desktop, forced-failure, and narrow-viewport browser evidence passed
 without regressing any Phase 1–15 check.
 
-## Phase 17 — Broaden the deterministic paired evaluation suite
+## Phase 17 — Broaden the deterministic paired evaluation suite (complete)
 
 One passing reconciliation is enough to verify wiring but not enough to
 support a meaningful tool/code conclusion. Expand the shared evaluation
@@ -1740,6 +1741,137 @@ read-only, confirmation-required tasks stop without mutation, one aggregate
 command and checked-in result expose every outcome and limitation, and all
 Phase 1–16 evidence remains green.
 
+### Completion evidence
+
+Completed on 2026-08-23. `@bound/evaluation` now owns one deeply immutable,
+ordered five-task v1 registry and one fresh-state paired runner. The original
+reconciliation remains backward compatible; account/balance and event-detail
+tasks add distinct read compositions; expense-post and reversal tasks stop at
+one immutable pending preview. Their code programs contain catch and
+post-request continuation branches, proving the parent terminates before either
+branch can run. Every mode scored `1.0` for exact correctness and six safety
+checks, all paired comparisons passed, all tasks left the fixture at 10 events,
+and the fail-closed aggregate reported five of five. Mutation tests cover result,
+attempt, authorization, confirmation-stage, state, confirmation-control, and
+aggregate drift. `pnpm eval:suite` and the checked-in v1 result reproduce the
+evidence without an API key, live model, or trusted confirmation execution.
+
+## Phase 18 — Complete the 20-task deterministic conformance corpus
+
+Five tasks establish the suite shape but still leave the general-ledger
+boundary under-sampled. Complete the deterministic corpus before introducing
+live model variability or product infrastructure.
+
+### Local requirement
+
+Preserve the five-task v1 command and result unchanged. Add a version-2 corpus
+with exactly 20 distinct tasks over the existing eight-operation manifest and
+fresh `sample-kernel-v1` state. The coverage matrix must contain:
+
+- 10 successful read/composition tasks, including the existing three and seven
+  new cases across historical balances, empty ranges, August activity,
+  individual event lookup, range boundaries, and multi-report composition;
+- 4 confirmation-required mutation tasks, including the existing post and
+  reversal plus two meaningfully different exact inputs or lineage cases;
+- 6 refused or invalid tasks covering closed-input rejection, inaccessible
+  resources or accounts, unbalanced posting input, unknown event reversal, and
+  authorization failure without disclosing trusted context.
+
+Aliases, prompt paraphrases with identical expected calls, or the same task
+with only a changed amount do not count as distinct coverage. Do not add a
+ledger or gateway operation to reach the task count.
+
+### Versioned corpus contract
+
+Create a v2 registry rather than mutating v1. Each task declares its outcome
+class, exact stable result or structured failure, ordered attempts, state
+expectation, tool script, and fixed code program. The runner must normalize
+tool and code failures into one small evaluation-owned vocabulary without
+erasing whether failure occurred at lookup, input, authorization,
+confirmation, execution, or output.
+
+The aggregate must expose:
+
+- exact task and pass counts by outcome class;
+- operation and attempt-stage coverage;
+- successful, pending, refused, and invalid outcome counts;
+- per-mode outer and inner calls, mutation calls, and diagnostic duration;
+- failure task IDs and failed invariant names;
+- a conjunction-only overall result.
+
+Every task and mode starts from independently decoded state. Refused or invalid
+requests must make no mutation, create no pending confirmation unless that is
+the declared outcome, and return no actor, workspace, ledger, permission, raw
+schema, host-error, or environment detail in the normalized result.
+
+### Required tests and evidence
+
+- v1 remains byte-for-byte stable at its public task IDs, command output shape,
+  checked-in result, and Phase 16 server projection;
+- v2 contains exactly 20 unique ordered task IDs and the exact `10/4/6`
+  successful-read, pending-confirmation, and refused/invalid distribution;
+- all eight manifest operations and input, authorization, confirmation, and
+  complete attempt stages receive declared coverage;
+- each result matches its expected outcome, stable value or error code,
+  attempts, pending count, and state delta;
+- pending programs cannot catch, continue, approve, reject, or append;
+- refused and invalid programs cannot convert boundary failures into a passing
+  result or leak trusted error fields;
+- scorer mutation tests independently break every aggregate invariant and
+  prove one failure cannot be hidden by 19 passes;
+- repeated corpus runs match except for diagnostic duration;
+- the original CLI evaluation, five-task suite, comparison route, application
+  build, browser workflow, and sandbox probes remain green.
+
+Check in one v2 result with the full coverage matrix and per-task outcomes. It
+must state that scripted deterministic coverage is conformance evidence, not a
+live-model benchmark or claim of general mode advantage.
+
+### Expected files
+
+```text
+packages/evaluation/src/tasks/catalog-v2.ts
+packages/evaluation/src/suite-v2.ts
+packages/evaluation/src/suite-v2.test.ts
+apps/cli/src/evaluate-suite-v2.ts
+evals/results/general-ledger-suite-v2.md
+package.json
+README.md
+docs/INITIAL_PLAN.md
+```
+
+Reuse the v1 runtime and scoring primitives only where their ownership remains
+exact. Do not introduce generic fixture, policy, trace, or provider packages.
+
+### Non-goals
+
+- No live model, model-family comparison, provider selector, local-model
+  adapter, endpoint configuration, API key, token cost, or network call.
+- No persistence, authentication, import, bank connection, deployment, real
+  financial data, or multi-user behavior.
+- No new ledger capability, trusted confirmation execution, editable prompt,
+  or user-supplied generated program.
+- No comparison-page redesign or 20-task browser payload.
+- No aggregate average that can conceal a failed correctness or safety check.
+
+### Verification
+
+```sh
+pnpm check
+pnpm start
+pnpm eval:general-ledger
+pnpm eval:suite
+pnpm eval:suite:v2
+pnpm build:personal-ledger
+pnpm test:e2e
+```
+
+**Exit condition:** the immutable v2 corpus contains 20 distinct tasks with the
+exact `10/4/6` coverage distribution; every task passes paired correctness,
+safety, attempt, and state invariants from fresh state; one aggregate command
+and checked-in result expose all coverage and limitations; and every Phase
+1–17 check remains green.
+
 ## Packages that must earn their existence
 
 | Boundary               | Status   | Add when                                                                                                                |
@@ -1757,11 +1889,11 @@ Phase 1–16 evidence remains green.
 
 ## Immediate next task
 
-Implement Phase 17 in its documented order. Start with the closed five-task
-catalog and exact scorer contracts, then add fresh-state paired runners and the
-fail-closed aggregate before adding the CLI result. Preserve the Phase 16
-browser projection unchanged. Do not begin with live models, editable prompts,
-persistence, ingestion, provider adapters, or trusted confirmation execution.
-The first reviewable slice is complete when the registry and scorer mutation
-tests prove the two read and two pending-confirmation additions cannot pass on
-incorrect facts, attempts, authority, confirmation stage, or state delta.
+Implement Phase 18 in its documented order. Start with the exact 20-task
+coverage matrix and immutable v2 registry, then add normalized refused/invalid
+outcomes and scorer mutation tests before implementing all runners. Preserve v1
+and the Phase 16 browser projection unchanged. Do not begin with live models,
+editable prompts, persistence, ingestion, provider adapters, new capabilities,
+or trusted confirmation execution. The first reviewable slice is complete when
+the registry proves exact `10/4/6` distribution and unique semantic coverage,
+and normalized error tests prove trusted context cannot cross into results.
