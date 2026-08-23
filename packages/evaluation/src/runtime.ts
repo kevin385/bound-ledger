@@ -32,16 +32,26 @@ const primaryAccountIds = [
   "acct_utilities",
 ] as const
 
-const session: Session = {
+export type EvaluationRuntimeProfile = "primary" | "checking_only"
+
+const makeSession = (profile: EvaluationRuntimeProfile): Session => ({
   actorId: "actor_primary_owner",
   activeWorkspaceId: "workspace_primary",
   activeLedgerId: "ledger_primary",
-  readableAccountIds: new Set(primaryAccountIds),
-  mutableAccountIds: new Set(primaryAccountIds),
-}
+  readableAccountIds:
+    profile === "checking_only"
+      ? new Set(["acct_checking"])
+      : new Set(primaryAccountIds),
+  mutableAccountIds:
+    profile === "checking_only"
+      ? new Set(["acct_checking"])
+      : new Set(primaryAccountIds),
+})
 
 export const makeFreshEvaluationGateway =
-  (): Promise<CapabilityGatewayService> =>
+  (
+    profile: EvaluationRuntimeProfile = "primary",
+  ): Promise<CapabilityGatewayService> =>
     Effect.runPromise(
       Effect.gen(function* () {
         const transactions = yield* decodeFixtureTransactions(
@@ -49,7 +59,7 @@ export const makeFreshEvaluationGateway =
         )
         const accounts = yield* decodeFixtureAccounts(sampleAccountsFixture)
         const fixture = yield* decodeKernelFixture(sampleKernelFixture)
-        const sessionLayer = makeTrustedSessionLayer(session)
+        const sessionLayer = makeTrustedSessionLayer(makeSession(profile))
         const ledgerLayer = makeInMemoryLedgerLayer(
           transactions,
           accounts,

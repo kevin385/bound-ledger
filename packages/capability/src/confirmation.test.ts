@@ -380,7 +380,7 @@ describe("capability confirmation", () => {
     }),
   )
 
-  it.effect("settles invalid confirmed mutations as failures without appending", () =>
+  it.effect("rejects invalid posts before confirmation and confirmed duplicates during execution", () =>
     withGateway((gateway) =>
       Effect.gen(function* () {
         const before = yield* eventCount(gateway)
@@ -392,11 +392,8 @@ describe("capability confirmation", () => {
             amountMinor: index === 1 ? -1_000 : posting.amountMinor,
           })),
         }
-        const unbalancedRequest = yield* requestOf(
-          gateway.invoke("events.post", unbalanced),
-        )
         const unbalancedError = yield* Effect.flip(
-          gateway.confirm(unbalancedRequest.id),
+          gateway.invoke("events.post", unbalanced),
         )
         const duplicateRequest = yield* requestOf(
           gateway.invoke("events.post", postInput("seed-deposit-may")),
@@ -405,7 +402,10 @@ describe("capability confirmation", () => {
           gateway.confirm(duplicateRequest.id),
         )
 
-        expect(unbalancedError).toMatchObject({ _tag: "UnbalancedEventError" })
+        expect(unbalancedError).toMatchObject({
+          _tag: "InvalidCapabilityInputError",
+          name: "events.post",
+        })
         expect(duplicateError).toMatchObject({
           _tag: "DuplicateIdempotencyKeyError",
           idempotencyKey: "seed-deposit-may",
@@ -414,14 +414,12 @@ describe("capability confirmation", () => {
 
         const attempts = yield* gateway.attempts
         expect(
-          attempts.find(
-            (attempt) => attempt.confirmationId === unbalancedRequest.id,
-          ),
+          attempts.find((attempt) => attempt.name === "events.post"),
         ).toMatchObject({
           outcome: "failed",
-          stage: "execution",
-          confirmation: "approved",
-          errorTag: "UnbalancedEventError",
+          stage: "input",
+          authorization: "not_reached",
+          errorTag: "InvalidCapabilityInputError",
         })
       }),
     ),

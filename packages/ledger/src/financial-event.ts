@@ -30,6 +30,15 @@ export const PostingSchema = Schema.Struct({
   description: Schema.optionalKey(NonEmptyTrimmedString),
 })
 
+const BalancedPostingsSchema = Schema.Array(PostingSchema).check(
+  Schema.isMinLength(2),
+  Schema.makeFilter((postings) =>
+    postings.reduce((total, posting) => total + posting.amountMinor, 0) === 0
+      ? undefined
+      : "postings must sum to zero",
+  ),
+)
+
 export const ProvenanceSchema = Schema.Struct({
   sourceKind: SourceKindSchema,
   sourceReference: Schema.NonEmptyString,
@@ -82,7 +91,7 @@ export const PostEventInputSchema = Schema.Struct({
   effectiveAt: Schema.DateTimeUtcFromString,
   idempotencyKey: Schema.NonEmptyString,
   provenance: ProvenanceSchema,
-  postings: Schema.Array(PostingSchema),
+  postings: BalancedPostingsSchema,
   lineage: Schema.optionalKey(LineageSchema),
 })
 

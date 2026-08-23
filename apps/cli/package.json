@@ -11,6 +11,7 @@
     "demo:ledger-agent": "node src/reconcile-general-ledger.ts",
     "eval:general-ledger": "node src/evaluate-general-ledger.ts",
     "eval:suite": "node src/evaluate-suite.ts",
+    "eval:suite:v2": "node src/evaluate-suite-v2.ts",
     "test": "node --test src/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
