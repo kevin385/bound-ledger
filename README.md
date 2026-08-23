@@ -36,14 +36,15 @@ future evidence-gated work.
   mutations, with trusted approval and rejection kept outside the model;
 - sandbox threat probes, a canonical paired general-ledger evaluation, and its
   superseded historical predecessor;
+- a closed five-task paired evaluation suite covering three read-only outcomes
+  and two immutable pending-confirmation stops from fresh state;
 - a read-only visual comparison workbench that reruns the canonical evaluation
   from fresh state and shows the shared facts, scores, gateway attempts, and
   `3`-versus-`1` outer-call difference without exposing trusted context.
 
-Phase 16 completed the shared evaluation package and visual comparison
-workbench. Phase 17 is planned as a broader deterministic paired evaluation
-suite; see [`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md) for its scope and
-gates.
+Phase 17 completed the five-task deterministic paired evaluation suite. Phase
+18 is planned as the 20-task deterministic conformance corpus; see
+[`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md) for its scope and gates.
 
 ```text
 apps/cli                runnable demos, agents, and evaluations
@@ -71,6 +72,7 @@ pnpm demo:ledger-read
 pnpm demo:ledger-confirmation
 pnpm demo:ledger-agent
 pnpm eval:general-ledger
+pnpm eval:suite
 pnpm dev:personal-ledger
 pnpm check
 ```
@@ -99,6 +101,13 @@ and prints the paired metrics and comparison. The checked-in result is in
 [`evals/results/general-ledger-reconciliation-v1.md`](evals/results/general-ledger-reconciliation-v1.md).
 The retired July-list result remains in `evals/results` and is clearly marked
 as superseded; its command and runner are gone.
+`pnpm eval:suite` runs five unique tasks in fixed order: the original
+reconciliation, an account/balance snapshot, event selection/detail, pending
+expense post, and pending reversal. Each task runs once per mode from fresh
+fixture state. The aggregate fails closed on any result, answer, attempt,
+authorization, confirmation, state, or mode-equivalence failure. The checked-in
+result is in
+[`evals/results/general-ledger-suite-v1.md`](evals/results/general-ledger-suite-v1.md).
 `pnpm dev:personal-ledger` starts the local TanStack Start application. Its
 dashboard, event journal/detail, immutable proposal review, expense/reversal
 confirmation controls, and deterministic reset all use the same
@@ -119,16 +128,16 @@ Bound Ledger is pre-alpha research software. It is not a production security
 boundary and should not process real financial data or untrusted generated
 code.
 
-Phase 16 is complete. It moved the canonical general-ledger task, runner, and
-scorer into `@bound/evaluation`; kept the CLI and trusted application server on
-that one contract; and added a responsive, read-only `/comparison` workbench
-with redaction, failure-state, and browser evidence.
+Phase 17 is complete. It added one immutable five-task registry, fresh-state
+paired runners, exact correctness and safety scorers, fail-closed aggregation,
+two executable pending-confirmation continuation probes, and a checked-in
+reproducible result while preserving the Phase 16 route and original command.
 
-Phase 17 is planned and is the only authorized next implementation phase. It
-expands the deterministic paired evidence across five versioned general-ledger
-tasks before introducing live models or product infrastructure. It does not
-add provider selection, persistence, ingestion, bank connectivity, or
-autonomous finance behavior.
+Phase 18 is planned and is the only authorized next implementation phase. It
+expands the deterministic corpus to 20 distinct tasks across successful reads,
+pending confirmations, and refused or invalid requests before live-model work.
+It does not add provider selection, persistence, ingestion, bank connectivity,
+or autonomous finance behavior.
 
 Please report security issues through GitHub's private vulnerability reporting
 flow described in [SECURITY.md](SECURITY.md).

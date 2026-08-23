@@ -26,6 +26,7 @@
     "build:personal-ledger": "pnpm --filter @bound/personal-ledger build",
     "test:e2e": "pnpm --filter @bound/personal-ledger test:e2e",
     "eval:general-ledger": "pnpm --filter @bound/cli eval:general-ledger",
+    "eval:suite": "pnpm --filter @bound/cli eval:suite",
     "test": "pnpm -r --if-present test && pnpm test:sandbox",
     "test:sandbox": "node --no-node-snapshot --test experiments/sandbox/*.test.ts",
     "typecheck": "pnpm -r --if-present typecheck",

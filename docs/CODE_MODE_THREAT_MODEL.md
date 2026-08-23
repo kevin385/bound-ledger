@@ -144,6 +144,23 @@ turn its local deterministic server into a multi-user or production trust
 boundary. Authentication, tenant isolation, hostile-input handling, and real
 financial data remain out of scope.
 
+## Phase 17 paired-suite contract
+
+The versioned five-task suite runs every task and mode with separately decoded
+fixture, gateway, trusted-session, provider, and sandbox state. Its two mutation
+programs deliberately include guest `catch` and post-request continuation
+branches. Both runs stop at the parent boundary with one immutable pending
+preview, one pending capability attempt, and no event append; neither branch is
+allowed to execute. Tool mode exposes the same pending result without exposing
+confirm or reject as an agent tool.
+
+The suite's aggregate is a conjunction: one wrong result, answer, attempt,
+authorization, confirmation stage, state count, or mode comparison fails the
+command. Scorer mutation tests exercise those failure paths, and repeated runs
+must match except for diagnostic duration. This evidence broadens the pinned
+local contract; it does not prove production isolation or make the scripted
+faux provider representative of a live model.
+
 ## Executable evidence
 
 [`experiments/sandbox/runtime-comparison.test.ts`](../experiments/sandbox/runtime-comparison.test.ts)
@@ -194,6 +211,13 @@ verifies exactly two code-mode tools, non-invoking progressive discovery,
 paired read equivalence, and equivalent pending mutation previews with no
 append. The versioned CLI evaluation separately records the canonical
 read-only comparison.
+
+[`packages/evaluation/src/suite.test.ts`](../packages/evaluation/src/suite.test.ts)
+verifies the immutable five-task registry, fresh repeated paired runs, exact
+attempt and state equivalence, immutable pending previews, unavailable
+confirmation control, confirmation-stage termination, and fail-closed task and
+aggregate scorers. The checked-in result records three completed read tasks and
+two pending mutation tasks without an append.
 
 The bridge exposes a pure guest-side generator SDK. SDK calls yield serialized
 requests; the parent invokes the gateway and resumes the same generator with a
