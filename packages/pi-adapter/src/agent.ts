@@ -3,7 +3,7 @@ import {
   type AgentEvent,
   type StreamFn,
 } from "@earendil-works/pi-agent-core"
-import type { AssistantMessage, Model } from "@earendil-works/pi-ai"
+import type { AssistantMessage, Model, Usage } from "@earendil-works/pi-ai"
 
 import type { CapabilityGatewayService } from "@bound/capability"
 
@@ -47,6 +47,8 @@ export interface LedgerAgentControl {
 export interface LedgerAgentRunResult {
   readonly text: string
   readonly events: ReadonlyArray<LedgerAgentEvent>
+  readonly modelTurns: number
+  readonly usage: Usage
 }
 
 export const translatePiEvent = (
@@ -160,5 +162,37 @@ export const runLedgerAgentPrompt = async (
   return {
     text: assistantText(finalAssistant),
     events,
+    modelTurns: agent.state.messages.filter(
+      (message) => message.role === "assistant",
+    ).length,
+    usage: agent.state.messages
+      .filter(
+        (message): message is AssistantMessage =>
+          message.role === "assistant",
+      )
+      .reduce<Usage>(
+        (total, message) => ({
+          input: total.input + message.usage.input,
+          output: total.output + message.usage.output,
+          cacheRead: total.cacheRead + message.usage.cacheRead,
+          cacheWrite: total.cacheWrite + message.usage.cacheWrite,
+          totalTokens: total.totalTokens + message.usage.totalTokens,
+          cost: {
+            input: total.cost.input + message.usage.cost.input,
+            output: total.cost.output + message.usage.cost.output,
+            cacheRead: total.cost.cacheRead + message.usage.cost.cacheRead,
+            cacheWrite: total.cost.cacheWrite + message.usage.cost.cacheWrite,
+            total: total.cost.total + message.usage.cost.total,
+          },
+        }),
+        {
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 0,
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+        },
+      ),
   }
 }

@@ -12,6 +12,7 @@
     "eval:general-ledger": "node src/evaluate-general-ledger.ts",
     "eval:suite": "node src/evaluate-suite.ts",
     "eval:suite:v2": "node src/evaluate-suite-v2.ts",
+    "eval:live": "node src/evaluate-live-models.ts",
     "test": "node --test src/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

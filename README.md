@@ -41,13 +41,19 @@ future evidence-gated work.
 - an immutable 20-task conformance corpus covering all eight operations with
   10 successful reads, 4 pending confirmations, and 6 refused or invalid
   requests through paired tool and controlled-code runners;
+- a closed, application-owned model matrix for native, HTTPS
+  OpenAI-compatible, and loopback-local endpoints, plus an explicit opt-in
+  six-task/three-trial live pilot that reuses the v2 scorer and remains
+  network-free in tests and dry runs;
 - a read-only visual comparison workbench that reruns the canonical evaluation
   from fresh state and shows the shared facts, scores, gateway attempts, and
   `3`-versus-`1` outer-call difference without exposing trusted context.
 
-Phase 18 completed the 20-task deterministic conformance corpus. Phase 19 is
-planned as the smallest opt-in, provider-neutral live-model evaluation pilot; see
-[`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md) for its scope and gates.
+Phase 19 completed the smallest opt-in, provider-neutral live-model evaluation
+pilot. No Phase 20 product expansion is authorized yet; the next decision is to
+review optional synthetic pilot evidence before planning persistence,
+ingestion, or a provider UI. See
+[`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md) for the completed scope and gates.
 
 ```text
 apps/cli                runnable demos, agents, and evaluations
@@ -59,6 +65,7 @@ packages/ledger         ledger domain and legacy transaction proof
 packages/pi-adapter     Pi tool projection and event translation
 experiments/sandbox     executable runtime comparison and threat probes
 evals/results           checked-in paired evaluation evidence
+evals/configs           safe live-model matrix examples (names, never values)
 ```
 
 ## Requirements
@@ -77,6 +84,7 @@ pnpm demo:ledger-agent
 pnpm eval:general-ledger
 pnpm eval:suite
 pnpm eval:suite:v2
+pnpm eval:live -- --config evals/configs/live-model-matrix.example.json --dry-run
 pnpm dev:personal-ledger
 pnpm check
 ```
@@ -118,6 +126,14 @@ eight manifest operations and fails closed on registry, distribution, exact
 result, normalized failure, attempt-stage, pending-confirmation, state,
 redaction, or mode-equivalence drift. The checked-in result is in
 [`evals/results/general-ledger-suite-v2.md`](evals/results/general-ledger-suite-v2.md).
+`pnpm eval:live -- --config <path> --dry-run` validates and prints the fixed
+Phase 19 pilot plan without resolving environment values, constructing a
+provider or ledger runtime, or using the network. A real run additionally
+requires `BOUND_LEDGER_LIVE_EVAL=1`, uses only allowlisted environment-variable
+names, accepts HTTPS remote or loopback-local custom endpoints, and runs the
+exact six-task v2 subset three times per supported mode from fresh state. Read
+[`docs/LIVE_MODEL_EVALUATION.md`](docs/LIVE_MODEL_EVALUATION.md) before opting
+in. Live results are optional evidence, not a CI gate.
 `pnpm dev:personal-ledger` starts the local TanStack Start application. Its
 dashboard, event journal/detail, immutable proposal review, expense/reversal
 confirmation controls, and deterministic reset all use the same
@@ -138,17 +154,24 @@ Bound Ledger is pre-alpha research software. It is not a production security
 boundary and should not process real financial data or untrusted generated
 code.
 
-Phase 18 is complete. It added the immutable 20-task v2 registry, exact
+Phase 18 added the immutable 20-task v2 registry, exact
 `10/4/6` outcome distribution, all-operation and attempt-stage coverage,
 normalized redacted failures, four executable confirmation-stop probes,
 conjunction-only aggregation, and checked-in reproducible evidence while
 keeping the v1 suite byte-stable.
 
-Phase 19 is planned and is the only authorized next implementation phase. It
-earns a small application-owned model configuration and opt-in live-model
-evaluation pilot without adding a provider package, browser selector, stored
-secrets, persistence, ingestion, bank connectivity, or autonomous finance
-behavior.
+Phase 19 is complete. It added the closed app-owned model configuration,
+allowlisted environment resolution, endpoint policy, explicit live opt-in,
+native/compatible/local Pi composition, exact six-task three-trial pilot,
+sanitized provider failures, per-task aggregates, safe dry run, result
+template, and network-free fake-provider coverage. It did not add a provider
+package, browser selector, stored secrets, persistence, ingestion, bank
+connectivity, or autonomous finance behavior.
+
+There is no authorized Phase 20 implementation. The next work is an evidence
+decision: optionally run the pilot against selected local/hosted models using
+synthetic fixtures, then document whether that evidence justifies a narrowly
+scoped next phase.
 
 Please report security issues through GitHub's private vulnerability reporting
 flow described in [SECURITY.md](SECURITY.md).
