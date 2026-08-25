@@ -72,3 +72,8 @@ export {
   type GeneralLedgerCorpusTaskV2,
   type GeneralLedgerCorpusToolCallV2,
 } from "./tasks/catalog-v2.ts"
+
+export {
+  makeFreshEvaluationGateway,
+  type EvaluationRuntimeProfile,
+} from "./runtime.ts"

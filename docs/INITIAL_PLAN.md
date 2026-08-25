@@ -9,9 +9,9 @@ repository. Follow its phases in order.
 It explains where Bound Ledger may eventually go, but it does not override the
 package gates or immediate task in this document.
 
-**Current phase:** Phase 19 planned — add the opt-in provider-neutral model
-evaluation pilot. Phase 18 is complete and verified; Phase 19 is the next
-implementation boundary.
+**Current phase:** Phase 19 complete — the opt-in provider-neutral model
+evaluation pilot is implemented and verified. No Phase 20 implementation is
+authorized; optional synthetic live evidence is the next planning input.
 
 ## Purpose
 
@@ -26,8 +26,8 @@ operations through the gateway and Pi tool mode, and added the governed human
 application. Phase 15 migrated the controlled code-mode proof to that same
 general-ledger catalog. Phase 16 exposed the already-earned comparison evidence
 visually. Phase 17 widened that deterministic evidence to five paired tasks.
-Phase 18 completed the 20-task deterministic conformance corpus. Phase 19 now
-earns the smallest application-owned provider configuration and opt-in model
+Phase 18 completed the 20-task deterministic conformance corpus. Phase 19
+earned the smallest application-owned provider configuration and opt-in model
 evaluation pilot before persistence, ingestion, or product expansion.
 
 ## Project naming
@@ -102,6 +102,7 @@ bound-ledger/
     code-mode/            bounded guest SDK and subprocess execution bridge
     ledger/               financial domain and legacy transaction proof
     pi-adapter/            Pi tool projection and event translation
+    evaluation/            canonical tasks, runners, and conjunction scorers
   docs/
     adr/0001-experimental-code-sandbox.md
     CODE_MODE_THREAT_MODEL.md
@@ -109,14 +110,15 @@ bound-ledger/
   experiments/
     sandbox/              executable runtime comparison and threat probes
   evals/
+    configs/              safe model-matrix examples containing names only
     results/              checked-in paired evaluation summary
   package.json            repository commands
   pnpm-workspace.yaml     workspaces and dependency catalog
   tsconfig.base.json      strict shared compiler policy
 ```
 
-There are exactly six application/package workspaces: two composition roots
-and four reusable packages. The concerns are domain behavior, capability
+There are exactly seven application/package workspaces: two composition roots
+and five reusable packages. The concerns are domain behavior, capability
 invocation, bounded generated-code execution, model-facing Pi adaptation, CLI
 and evaluation composition, and the governed human application.
 
@@ -127,6 +129,7 @@ apps/cli  ─┬─>  packages/pi-adapter  ─┬─>  packages/code-mode  ─�
            │                           └─>  packages/capability  ├─>  packages/ledger
            ├─>  packages/code-mode  ─────>  packages/capability  │
            ├────────────────────────────>  packages/capability  │
+           ├────────────────────────────>  packages/evaluation  │
            └───────────────────────────────────────────────────>  packages/ledger
 
 apps/personal-ledger  ─┬─>  packages/capability  ──>  packages/ledger
@@ -142,6 +145,9 @@ apps/personal-ledger  ─┬─>  packages/capability  ──>  packages/ledger
   bridge. It may depend on `packages/capability`, but never on `apps/`, ledger
   internals, or trusted session construction.
 - `apps/cli` composes dependencies and runs programs; it owns no ledger rules.
+- `packages/evaluation` owns canonical immutable task registries, deterministic
+  runners, normalizers, and conjunction scorers. It may compose the capability,
+  code-mode, ledger, and Pi-adapter boundaries, but never imports from an app.
 - `apps/personal-ledger` owns routes, human forms, server functions, and its
   long-lived in-memory runtime. It may depend on `packages/capability` and
   `packages/ledger`, but it owns no second financial execution path.
@@ -2033,6 +2039,22 @@ pilot reuses v2 scorers; fake-provider tests prove streaming, failure, opt-in,
 endpoint, and non-disclosure behavior without network access; a dry run is
 reproducible; and every Phase 1–18 gate remains green.
 
+**Completion record:** Phase 19 is complete. Configuration remains in
+`apps/cli` and accepts environment-variable names only. Resolution is
+allowlisted; native endpoints use Pi's catalog, remote compatible endpoints
+require HTTPS, and local endpoints require loopback. Live execution is closed
+behind the explicit opt-in and private config path; dry run resolves neither
+environment values nor providers. The immutable six-task registry references
+v2 task objects directly, every supported task/mode runs three times from a
+fresh fixture, and public evidence retains only sanitized labels, status,
+invariant names, safe counts, duration, and usage/cost when reported. Raw
+scorer candidates and capability attempts remain internal because they contain
+trusted fixture context. Network-free tests cover tool/code success,
+confirmation, refusal, invalid input, cancellation, malformed output, missing
+usage, provider failure, endpoint ordering, fresh-state repetition, aggregates,
+and disclosure checks. The safe example, operator guide, and result template
+are checked in; no live result is required or claimed.
+
 ## Packages that must earn their existence
 
 | Boundary               | Status   | Add when                                                                                                                |
@@ -2050,13 +2072,14 @@ reproducible; and every Phase 1–18 gate remains green.
 
 ## Immediate next task
 
-Implement Phase 19 in its documented order. Start with the closed model
-configuration, explicit opt-in, endpoint policy, and secret non-disclosure tests;
-then bind the exact six-task v2 subset and repeated-trial aggregate before
-adding the manual live command. Keep provider configuration in `apps/cli` and
-all default commands network-free. Do not begin with a browser selector,
-credential storage, persistence, ingestion, self-hosting, or trusted
-confirmation execution. The first reviewable slice is complete when native,
-OpenAI-compatible, and local configurations decode safely and fake-provider
-tests prove secrets and endpoints cannot cross into model-visible or recorded
-state.
+Do not begin Phase 20 implementation yet. If external model access is available,
+run the Phase 19 pilot manually against a small, explicitly selected set of
+local and/or hosted models using only `sample-kernel-v1`, preserve the full
+three-trial sample for each supported task/mode, sanitize it with
+`evals/results/live-model-pilot-template.md`, and review where failures cluster.
+Then write a proposed Phase 20 with one evidence-backed product question and
+its exit gate. If no live access is available, the next useful work is a
+time-boxed user workflow study of the existing governed personal-ledger UI.
+Persistence, ingestion, bank connectivity, a browser provider selector,
+credential storage, self-hosting, and autonomous confirmation remain
+unauthorized until that evidence justifies one narrow phase.

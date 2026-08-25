@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "configurations": [
+    {
+      "id": "native-openai-example",
+      "provider": "openai",
+      "model": "gpt-5-mini",
+      "endpointKind": "native",
+      "supportsTools": true,
+      "supportsCodeMode": true,
+      "apiKeyEnvironmentVariable": "OPENAI_API_KEY"
+    },
+    {
+      "id": "hosted-compatible-example",
+      "provider": "hosted-compatible",
+      "model": "replace-with-model-id",
+      "endpointKind": "openai_compatible",
+      "supportsTools": true,
+      "supportsCodeMode": false,
+      "baseUrlEnvironmentVariable": "BOUND_LEDGER_MODEL_BASE_URL",
+      "apiKeyEnvironmentVariable": "BOUND_LEDGER_MODEL_API_KEY"
+    },
+    {
+      "id": "loopback-local-example",
+      "provider": "local-compatible",
+      "model": "replace-with-local-model-id",
+      "endpointKind": "local",
+      "supportsTools": true,
+      "supportsCodeMode": true,
+      "baseUrlEnvironmentVariable": "BOUND_LEDGER_MODEL_BASE_URL"
+    }
+  ]
+}
