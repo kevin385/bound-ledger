@@ -4,7 +4,7 @@ packages:
 
 catalog:
   "@effect/vitest": "4.0.0-beta.107"
-  "@earendil-works/pi-agent-core": "0.84.1"
+  "@earendil-works/pi-agent-core": "0.84.2"
   "@earendil-works/pi-ai": "0.84.1"
   "@types/node": "26.2.0"
   "@types/react": "19.2.18"
