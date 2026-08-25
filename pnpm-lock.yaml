@@ -22,8 +22,8 @@ catalogs:
       specifier: 0.84.1
       version: 0.84.1
     '@effect/vitest':
-      specifier: 4.0.0-beta.107
-      version: 4.0.0-beta.107
+      specifier: 4.0.0-rc.111
+      version: 4.0.0-rc.111
     '@playwright/test':
       specifier: 1.62.1
       version: 1.62.1
@@ -58,8 +58,8 @@ catalogs:
       specifier: 6.1.0
       version: 6.1.0
     effect:
-      specifier: 4.0.0-beta.107
-      version: 4.0.0-beta.107
+      specifier: 4.0.0-rc.111
+      version: 4.0.0-rc.111
     nitro:
       specifier: 3.0.260610-beta
       version: 3.0.260610-beta
@@ -118,7 +118,7 @@ importers:
         version: 0.84.1(ws@8.21.3)(zod@4.4.3)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.107
+        version: 4.0.0-rc.111
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -164,7 +164,7 @@ importers:
         version: 1.168.48(crossws@0.4.12(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.5)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.107
+        version: 4.0.0-rc.111
       react:
         specifier: 'catalog:'
         version: 19.2.8
@@ -207,11 +207,11 @@ importers:
         version: link:../ledger
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.107
+        version: 4.0.0-rc.111
     devDependencies:
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-beta.107(effect@4.0.0-beta.107)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))
+        version: 4.0.0-rc.111(effect@4.0.0-rc.111)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -226,7 +226,7 @@ importers:
         version: link:../capability
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.107
+        version: 4.0.0-rc.111
       quickjs-emscripten:
         specifier: 'catalog:'
         version: 0.32.0
@@ -236,7 +236,7 @@ importers:
         version: link:../ledger
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-beta.107(effect@4.0.0-beta.107)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))
+        version: 4.0.0-rc.111(effect@4.0.0-rc.111)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))
       '@types/node':
         specifier: 'catalog:'
         version: 26.2.0
@@ -266,7 +266,7 @@ importers:
         version: 0.84.1(ws@8.21.3)(zod@4.4.3)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.107
+        version: 4.0.0-rc.111
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -279,11 +279,11 @@ importers:
     dependencies:
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.107
+        version: 4.0.0-rc.111
     devDependencies:
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-beta.107(effect@4.0.0-beta.107)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))
+        version: 4.0.0-rc.111(effect@4.0.0-rc.111)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -307,7 +307,7 @@ importers:
         version: 0.84.1(ws@8.21.3)(zod@4.4.3)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.107
+        version: 4.0.0-rc.111
       typebox:
         specifier: 'catalog:'
         version: 1.3.7
@@ -317,7 +317,7 @@ importers:
         version: link:../ledger
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-beta.107(effect@4.0.0-beta.107)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))
+        version: 4.0.0-rc.111(effect@4.0.0-rc.111)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))
       '@types/node':
         specifier: 'catalog:'
         version: 26.2.0
@@ -667,10 +667,10 @@ packages:
     resolution: {integrity: sha512-180/xGJtsq7IoR3p9EKWjRd0e9M4DkxInhlo9xyD7prDC7Qrhqq+nhvwrW0lFjPfXcEI2FSHmGCSyvSJE9GsaQ==}
     engines: {node: '>=22.19.0'}
 
-  '@effect/vitest@4.0.0-beta.107':
-    resolution: {integrity: sha512-n4/qsx4DnT4dEI/wNgMivxyUeJoeiU1TCSz0WnoHWk/dny40Oxjip2P9IXGQDgPb9fsYVnerF0QRA6nPUuExQA==}
+  '@effect/vitest@4.0.0-rc.111':
+    resolution: {integrity: sha512-YDaEVT+grREBVMzykRNFtJwGxy02achzT0WXZYwMJA4ukzuB9krkgQ5roc3N6zhC3NQq/j4IyM32/Pcov7AhHw==}
     peerDependencies:
-      effect: ^4.0.0-beta.107
+      effect: ^4.0.0-rc.111
       vitest: '>=4.1.0 <5.0.0'
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -1636,8 +1636,8 @@ packages:
   ecdsa-sig-formatter@1.0.11:
     resolution: {integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==}
 
-  effect@4.0.0-beta.107:
-    resolution: {integrity: sha512-OoBAv8eF+yanc+C6xhgEUnWeXUSHA6ynnscYqpkAY9GSnzZWystsIjBowVqCkLpHGlnRtdIqYT3wHwpOY6JDnQ==}
+  effect@4.0.0-rc.111:
+    resolution: {integrity: sha512-ASd5L58EIR0CUNueZNKKjSsyOCd+2alxOAIaTcHaqkJkPsaYSsw5Cg/cfANk5K4Jr2YsX756xvX11shzqsreWA==}
 
   electron-to-chromium@1.5.412:
     resolution: {integrity: sha512-z4rMe3esBzlzovKHj4gxJnsCGZRK5l4baUvm+gCGJBPE+gsyUMKsuU9tnEUtI1dOebXz1ytAPGjvXhmQ7rIPwA==}
@@ -1877,9 +1877,6 @@ packages:
   kind-of@6.0.3:
     resolution: {integrity: sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==}
     engines: {node: '>=0.10.0'}
-
-  kubernetes-types@1.30.0:
-    resolution: {integrity: sha512-Dew1okvhM/SQcIa2rcgujNndZwU8VnSapDgdxlYoB84ZlpAD43U6KLAFqYo17ykSFGHNPrg0qry0bP+GJd9v7Q==}
 
   lightningcss-android-arm64@1.33.0:
     resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
@@ -2417,10 +2414,6 @@ packages:
     resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
-  uuid@14.0.1:
-    resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
-    hasBin: true
 
   vite@8.2.2:
     resolution: {integrity: sha512-cFKLV/PRgAUlIRm5WjMjJ86jrftzpqcgH+Us+DS8mI3CDNiH30Whrz8uHL3+MOLPAgqbMBAqWdAHAphOAM+z/Q==}
@@ -3101,9 +3094,9 @@ snapshots:
 
   '@earendil-works/pi-telemetry@0.84.1': {}
 
-  '@effect/vitest@4.0.0-beta.107(effect@4.0.0-beta.107)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))':
+  '@effect/vitest@4.0.0-rc.111(effect@4.0.0-rc.111)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))':
     dependencies:
-      effect: 4.0.0-beta.107
+      effect: 4.0.0-rc.111
       vitest: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -3910,13 +3903,11 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
-  effect@4.0.0-beta.107:
+  effect@4.0.0-rc.111:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 4.9.0
-      kubernetes-types: 1.30.0
       msgpackr: 2.0.5
-      uuid: 14.0.1
 
   electron-to-chromium@1.5.412: {}
 
@@ -4162,8 +4153,6 @@ snapshots:
       safe-buffer: 5.2.1
 
   kind-of@6.0.3: {}
-
-  kubernetes-types@1.30.0: {}
 
   lightningcss-android-arm64@1.33.0:
     optional: true
@@ -4593,8 +4582,6 @@ snapshots:
   use-sync-external-store@1.6.0(react@19.2.8):
     dependencies:
       react: 19.2.8
-
-  uuid@14.0.1: {}
 
   vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0):
     dependencies:
