@@ -1,5 +1,9 @@
 # AGENTS
 
+> Legacy application guidance: these instructions apply only to this existing
+> application while it remains. They do not choose the replacement UI system.
+> New work follows [the active plan](../../docs/INITIAL_PLAN.md).
+
 Project-specific guidance for AI coding agents.
 
 <!-- ASTRYX:START -->

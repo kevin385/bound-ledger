@@ -1,2085 +1,246 @@
-# Bound Ledger — Initial Implementation Plan
+# Bound Ledger — Replacement Implementation Plan
 
-## Document role
+## Active direction
 
-This document is the authoritative implementation sequence for the current
-repository. Follow its phases in order.
+**Current step: R0 — specify and bootstrap the independent replacement.**
+Status: planned; replacement source and commands do not exist yet.
 
-[`PLAN.md`](../PLAN.md) is the longer research thesis and target architecture.
-It explains where Bound Ledger may eventually go, but it does not override the
-package gates or immediate task in this document.
+This is the authoritative implementation sequence for the new direction in
+[PLAN.md](../PLAN.md). It supersedes the old nineteen-phase research sequence.
+Persistence, a useful human interface, and Pi integration are part of the new
+base; running the old live-model pilot is not a prerequisite.
 
-**Current phase:** Phase 19 complete — the opt-in provider-neutral model
-evaluation pilot is implemented and verified. No Phase 20 implementation is
-authorized; optional synthetic live evidence is the next planning input.
+Build independently alongside existing code, then remove the existing
+implementation entirely when the initial-base gate below passes. Do not port the
+old abstractions, maintain API compatibility, or import its runtime packages.
+No old source is removed by this documentation change.
 
-## Purpose
+## Planned source ownership
 
-Build the smallest application that can test whether tool mode and code mode
-share one application-owned execution boundary over deterministic financial
-behavior.
-
-Phases 1–9 intentionally used a narrow transaction slice to establish the
-capability, agent, sandbox, and evaluation boundaries. Phases 10–14 replaced
-that domain foundation with the general-ledger kernel, moved its earned
-operations through the gateway and Pi tool mode, and added the governed human
-application. Phase 15 migrated the controlled code-mode proof to that same
-general-ledger catalog. Phase 16 exposed the already-earned comparison evidence
-visually. Phase 17 widened that deterministic evidence to five paired tasks.
-Phase 18 completed the 20-task deterministic conformance corpus. Phase 19
-earned the smallest application-owned provider configuration and opt-in model
-evaluation pilot before persistence, ingestion, or product expansion.
-
-## Project naming
-
-- Product and repository display name: **Bound Ledger**.
-- Repository slug: `bound-ledger`.
-- Package namespace: `@bound/*`.
-- Reference domain: a personal financial ledger.
-
-The package namespace remains `@bound/*`; renaming the repository does not
-require renaming existing package imports.
-
-## Clean-room rule
-
-Bound Ledger is an independent implementation.
-
-Other systems may be consulted to understand architectural pressures and
-failure modes. Do not copy their code, schemas, tests, prompts, naming catalogs,
-package internals, or product-specific abstractions into Bound Ledger. Do not
-commit private repository paths or internal project details.
-
-For every subsystem:
-
-1. State Bound Ledger's local requirement.
-2. Write the invariant or failing test.
-3. Implement the smallest local design.
-4. Consult public reference material only for missed failure modes.
-5. Record decisions that materially constrain later work.
-
-## Practices adopted early
-
-Only adopt practices that are cheap now and expensive to retrofit later:
-
-- applications are composition roots;
-- reusable behavior lives in packages;
-- dependencies point from applications toward packages, never back to apps;
-- each package exposes a small explicit public surface;
-- shared compiler and dependency versions live at the repository root;
-- tests stay beside the behavior they verify;
-- untyped input is decoded at the boundary;
-- one concept has one owner;
-- abstractions require a real boundary or a second consumer.
-
-## Deferred architecture
-
-Do not introduce these during the current phase:
-
-- a general harness or engine package;
-- feature manifests or automatic feature composition;
-- work orders, durable continuations, dependencies, or playbooks;
-- identity, policy, database, observability, or provider packages;
-- web, API, cloud, or deployment infrastructure;
-- a large authoring SDK;
-- a generic testing package;
-- production-security claims for generated-code execution;
-- source-specific ingestion adapters;
-- multi-currency, foreign exchange, security lots, or market valuation;
-- an interest-policy engine.
-
-Each may appear only after a Bound Ledger requirement, test, and phase gate
-justify it.
-
-## Repository shape now
+The following paths are **planned**, not existing workspaces:
 
 ```text
-bound-ledger/
-  apps/
-    cli/                  runnable demos, agent compositions, and evaluations
-    personal-ledger/      TanStack Start human application and trusted server
-  packages/
-    capability/           validated and authorized invocation boundary
-    code-mode/            bounded guest SDK and subprocess execution bridge
-    ledger/               financial domain and legacy transaction proof
-    pi-adapter/            Pi tool projection and event translation
-    evaluation/            canonical tasks, runners, and conjunction scorers
-  docs/
-    adr/0001-experimental-code-sandbox.md
-    CODE_MODE_THREAT_MODEL.md
-    INITIAL_PLAN.md
-  experiments/
-    sandbox/              executable runtime comparison and threat probes
-  evals/
-    configs/              safe model-matrix examples containing names only
-    results/              checked-in paired evaluation summary
-  package.json            repository commands
-  pnpm-workspace.yaml     workspaces and dependency catalog
-  tsconfig.base.json      strict shared compiler policy
+apps/finance                  local application and composition root
+packages/finance-core         financial operations, records, SQLite persistence
+packages/finance-agent        thin Pi durable/tool/code adapter
 ```
 
-There are exactly seven application/package workspaces: two composition roots
-and five reusable packages. The concerns are domain behavior, capability
-invocation, bounded generated-code execution, model-facing Pi adaptation, CLI
-and evaluation composition, and the governed human application.
-
-## Dependency rules
-
-```text
-apps/cli  ─┬─>  packages/pi-adapter  ─┬─>  packages/code-mode  ─┐
-           │                           └─>  packages/capability  ├─>  packages/ledger
-           ├─>  packages/code-mode  ─────>  packages/capability  │
-           ├────────────────────────────>  packages/capability  │
-           ├────────────────────────────>  packages/evaluation  │
-           └───────────────────────────────────────────────────>  packages/ledger
-
-apps/personal-ledger  ─┬─>  packages/capability  ──>  packages/ledger
-                       └────────────────────────────>  packages/ledger
-```
-
-- `packages/ledger` must not import from `apps/`.
-- `packages/capability` may depend on `packages/ledger`, but never on `apps/`.
-- `packages/pi-adapter` owns Pi tool/code projection and event translation. It
-  may depend on `packages/capability` and `packages/code-mode`, but never on
-  `apps/` or ledger internals.
-- `packages/code-mode` owns the generated guest SDK and isolated execution
-  bridge. It may depend on `packages/capability`, but never on `apps/`, ledger
-  internals, or trusted session construction.
-- `apps/cli` composes dependencies and runs programs; it owns no ledger rules.
-- `packages/evaluation` owns canonical immutable task registries, deterministic
-  runners, normalizers, and conjunction scorers. It may compose the capability,
-  code-mode, ledger, and Pi-adapter boundaries, but never imports from an app.
-- `apps/personal-ledger` owns routes, human forms, server functions, and its
-  long-lived in-memory runtime. It may depend on `packages/capability` and
-  `packages/ledger`, but it owns no second financial execution path.
-- Cross-workspace imports use package names such as `@bound/ledger`.
-- Consumers import from a package's declared exports, not its internal paths.
-- No root-level application source is allowed.
-- Effect v4 is the chosen effect and schema library for this implementation.
-- Direct dependencies remain exactly pinned; do not introduce version ranges.
-
-## Phase rules
-
-- Complete the current phase's tests and exit condition before starting the
-  next phase.
-- Do not scaffold packages named by later phases in advance.
-- A phase may refine internal file names, but it may not move ownership across
-  the declared package boundaries without updating this document first.
-- Every phase must keep `pnpm check` passing.
-
-## Phase 1 — Make the tiny ledger trustworthy
-
-Decode fixture data with Effect Schema and model expected decoding failure as a
-typed error. Summary behavior must receive decoded transactions only.
-
-### Expected files
-
-```text
-packages/ledger/src/
-  transaction.ts          schemas and schema-derived domain types
-  fixtures.ts             unknown fixture input and fixture decoder
-  fixtures.test.ts        fixture decoding and validation boundary tests
-  ledger.ts               summary behavior over decoded transactions
-  ledger.test.ts          summary behavior and decoded-input flow tests
-  index.ts                explicit public exports
-apps/cli/src/main.ts       decode, summarize, and render at the composition root
-```
-
-### Transaction contract
-
-- `id` is a non-empty string.
-- `month` uses `YYYY-MM` with a month from `01` through `12`.
-- `merchant` and `category` are non-empty after trimming.
-- `amountCents` is a signed safe integer.
-- Negative amounts are valid because later fixtures include refunds.
-- Fractional, infinite, `NaN`, and unsafe integer amounts are invalid.
-- The `Transaction` TypeScript type is derived from the schema rather than
-  maintained as a duplicate handwritten interface.
-
-The raw deterministic fixture is typed as `unknown`. A public decoder accepts
-`unknown` and returns an Effect containing decoded read-only transactions or an
-`InvalidFixtureError`. The error must have a stable `_tag` and retain useful
-schema failure details without exposing raw secrets.
-
-### Required tests
-
-`fixtures.test.ts` owns fixture-decoding and validation-boundary coverage:
-
-- The existing July fixture decodes.
-- An invalid calendar month is rejected.
-- A blank merchant or category is rejected.
-- A fractional cent amount is rejected.
-- A negative refund amount is accepted.
-
-`ledger.test.ts` owns summary behavior and verifies that invalid fixture input
-fails before summary behavior is invoked:
-
-- The decoded July fixture produces the unchanged summary.
-- Invalid fixture input fails before summary behavior is invoked.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-```
-
-`pnpm start` must continue to print the deterministic July 2026 summary.
-
-### Non-goals
-
-- No service layer.
-- No mutation.
-- No authorization or trusted session.
-- No capability package.
-- No agent or model dependency.
-- No Cloudflare infrastructure.
-
-**Exit condition:** invalid fixture input fails with `InvalidFixtureError`
-before reaching summary logic, and every required test passes.
-
-## Phase 2 — Add an in-memory ledger service
-
-Add one Effect service inside `@bound/ledger` with two operations:
-
-- list transactions for a month;
-- get one transaction by ID.
-
-Keep data in memory. The CLI supplies the Layer at the composition root. Model
-an expected missing transaction as a typed domain error.
-
-**Exit condition:** summary behavior obtains transactions through the service
-rather than receiving an imported fixture directly.
-
-Do not add persistence or a separate storage package.
-
-## Phase 3 — Add trusted context and one mutation
-
-Extend the in-memory domain fixtures with a second household workspace and
-account ownership. Here, “workspace” means a ledger tenant in the domain model,
-not another pnpm workspace.
-
-Add `updateCategory` and a small trusted session model. Actor identity, active
-workspace, readable account IDs, and mutable account IDs come from the
-composition root and never from model-controlled operation input.
-
-**Exit condition:**
-
-- an allowed update succeeds;
-- reads and mutations against the inaccessible household workspace fail;
-- reads and mutations against inaccessible accounts fail;
-- failed authorization produces no state change.
-
-Keep this behavior inside `@bound/ledger` until the common invocation boundary
-exists.
-
-## Phase 4 — Earn the capability package
-
-Create `packages/capability` only now, because three existing ledger operations
-need one validated and authorized invocation path:
-
-- `transactions.list`;
-- `transactions.get`;
-- `transactions.update_category`.
-
-The invocation path decodes input, receives trusted session context separately,
-authorizes each call, executes the operation, decodes successful output, and
-records a small structured attempt.
+Proposed package names are `@bound/finance`, `@bound/finance-core`, and
+`@bound/finance-agent`. Use these independent names until the prototype is removed;
+renaming them later is not required.
 
 Dependency direction:
 
 ```text
-apps/cli  ──>  packages/capability  ──>  packages/ledger
+apps/finance -> packages/finance-agent -> packages/finance-core
+apps/finance -------------------------> packages/finance-core
 ```
 
-The CLI may also provide ledger Layers at the composition root, but the
-capability package must never depend on the CLI.
-
-**Exit condition:** direct deterministic tests invoke all three operations
-through one common path.
-
-## Phase 5 — Add the first agent adapter
-
-Create `packages/pi-adapter` only after the capability boundary passes its
-tests. Project the three capabilities as Pi tools and keep the conversation in
-the CLI.
-
-The adapter owns model-facing projection and Pi event translation. It does not
-own authorization, trusted context, or ledger behavior. Use sequential tool
-execution initially.
-
-CI must exercise the adapter with a deterministic fake model stream and no API
-key. A live model smoke test is optional and must never run in ordinary CI.
-
-**Exit condition:** a deterministic prompt lists transactions through Pi Agent
-Core and the real capability boundary, and records the capability attempt.
-
-Do not add web chat or code mode yet.
-
-## Deployment checkpoint — after Phase 5
-
-Only after the local CLI agent path works may a Cloudflare proof of concept add
-`apps/worker` as another composition root.
-
-The Worker may own HTTP transport, environment bindings, and Effect Layer
-construction. It must reuse `@bound/pi-adapter` and the capability gateway. It
-must not own ledger behavior, authorization, or a second agent loop.
-
-For the first deployment proof:
-
-- use a single JSON request and response;
-- keep ledger data deterministic and in memory;
-- keep secrets in Cloudflare bindings or local ignored files;
-- do not add Durable Objects, D1, KV, R2, Vectorize, or a web UI;
-- do not introduce Cloudflare Agents SDK or Think alongside Pi Agent Core;
-- require a separate explicit approval before deployment.
-
-Cloud deployment is optional evidence and does not change the Phase 6 gate.
-
-## Phase 6 — Evaluate code-mode feasibility
-
-Write the threat model and compare sandbox runtimes with executable escape and
-resource-limit tests before creating `packages/code-mode`.
-
-**Exit condition:** an ADR records the experimental isolation boundary, its
-known limits, and the conditions that would stop the project.
-
-Phase 6 selected a fresh QuickJS-WASM runtime inside a disposable child process
-for a local proof only. The evidence is in
-[`experiments/sandbox`](../experiments/sandbox), the threat model is
-[`CODE_MODE_THREAT_MODEL.md`](CODE_MODE_THREAT_MODEL.md), and the decision is
-[`ADR 0001`](adr/0001-experimental-code-sandbox.md).
-
-## Phase 7 — Build the controlled code-mode proof
-
-Create `packages/code-mode` now that the sandbox decision gate has passed.
-Implement the smallest generated `app` proxy and execution boundary that can
-list July 2026 transactions through the existing capability gateway.
-
-The implementation must follow ADR 0001:
-
-- one fresh QuickJS-WASM runtime in one disposable child process per program;
-- an explicit size-bounded serialization protocol with no host references;
-- trusted session context, authorization, and attempt recording remain in the
-  parent-owned capability gateway;
-- wall-clock, memory, stack, program, result, capability-call, mutation-call,
-  and recursion limits are enforced;
-- abort stops the runtime and any pending gateway request;
-- no network, filesystem, environment, process, timer, import, database, or
-  direct ledger access is exposed.
-
-Extend the executable evidence with bridge, recursive-call, call-budget,
-mutation-budget, abort, authority-change, and host-reference-retention tests.
-Do not add a general harness, tracing package, web surface, or live model path.
-
-**Exit condition:** a deterministic generated program lists July transactions
-through `@bound/code-mode` and the real capability gateway, records the same
-capability attempt as tool mode, and all sandbox/bridge escape and resource
-tests pass without an API key.
-
-Phase 7 uses a pure guest-side generator SDK: `yield*` emits serialized
-capability requests, and the parent resumes the same QuickJS generator with
-serialized gateway responses. No host callback or trusted object enters the
-runtime. The CLI and deterministic tests exercise the real gateway.
-
-## Phase 8 — Add the bounded code-mode agent projection
-
-Project code mode into Pi Agent Core only after the direct Phase 7 boundary is
-stable. Add one sequential `execute_code` tool and one compact capability
-discovery surface owned by `@bound/pi-adapter`; reuse `@bound/code-mode` and do
-not create another agent loop or execution path.
-
-Use a deterministic fake model stream that emits the checked-in July listing
-program. The adapter must present the generator SDK syntax and limits clearly,
-translate execution events, and return only serialized result/metadata. It must
-not expose the gateway, trusted session, raw schemas, interpreter handles, or
-child-process controls to the model.
-
-Add paired deterministic coverage showing the existing tool projection and the
-new code projection produce the same July result and core capability attempt.
-Keep outer tool execution sequential. Do not add a UI, live model requirement,
-general evaluation framework, or additional domain operations.
-
-**Exit condition:** a deterministic prompt completes through Pi Agent Core's
-`execute_code` tool, the real `@bound/code-mode` boundary, and the real
-capability gateway without an API key; its result and core attempt equal the
-existing tool-mode path.
-
-Phase 8 keeps one Pi Agent Core loop per run and selects an explicit projection
-mode. Code mode exposes exactly one sequential `execute_code` tool. Its compact
-guide is built from immutable gateway metadata, Pi-owned SDK spellings, and
-validated code-mode limits. Paired fake-model coverage proves the tool and code
-projections return the same July result and capability attempt.
-
-## Phase 9 — Record the first paired evaluation task
-
-Create one versioned evaluation task for the existing July listing prompt. Run
-the tool and code projections from identical reset fixture state and record a
-small comparable result for each mode: final answer, capability attempts, outer
-model turns/tool calls, inner capability-call count, duration, and deterministic
-correctness/safety scores.
-
-Keep this as one concrete task and runner; do not create `@bound/testing`, a
-general evaluation framework, UI, persistence, or live-model requirement. Raw
-timing is diagnostic only because the faux provider is deterministic and the
-code path starts a subprocess.
-
-The scorer must verify the three expected July transaction IDs, one authorized
-`transactions.list` attempt, no mutation, no inaccessible transaction, and no
-extra capability call. Commit the task version and a reproducible summary, but
-do not claim broader code-mode advantage from one task.
-
-**Exit condition:** one repository command runs the paired task without an API
-key, fails on result/attempt/safety divergence, and emits a versioned summary
-that clearly labels the sample size and deterministic configuration.
-
-Phase 9 keeps the versioned task, runner, and scorer in the CLI composition
-root. Each mode receives a fresh decoded fixture and gateway. The checked-in
-summary records one deterministic sample, separates outer model/tool counts
-from inner capability calls, treats timing as diagnostic, and makes no broader
-claim from the result.
-
-## Phase 10 — General ledger kernel
-
-The Phase 1–9 `Transaction` model was deliberately sufficient for proving the
-execution boundary, but it is not the product's financial foundation. Its
-stored `month`, single-account amount, merchant/category requirements, and
-in-place category update cannot represent a general append-only ledger.
-
-Build the new foundation inside `@bound/ledger` before adding more capabilities,
-code-mode behavior, ingestion, persistence, or UI.
-
-### Local requirement
-
-Implement one in-memory, single-currency personal financial ledger that:
-
-- records ambiguous interpretations as proposals that do not affect balances;
-- atomically appends immutable posted events with balanced postings;
-- represents deposits, contributions, transfers, withdrawals, expenses,
-  refunds, and adjustments through the same event/posting contract;
-- derives balances, trial balance, expenses, and date-range activity from
-  postings;
-- corrects economic facts with linked reversal and replacement events;
-- preserves source and audit provenance without trusting model-supplied actor
-  identity or recorded time.
-
-### Domain contract
-
-Keep one concept owner inside `@bound/ledger`:
-
-- `Ledger` identifies the financial and authorization context. New domain APIs
-  use ledger terminology; any temporary mapping from the historical workspace
-  name belongs at a compatibility boundary.
-- `Account` has an ID, ledger ID, display name, currency, accounting class, and
-  product subtype. Accounting classes are `asset`, `liability`, `equity`,
-  `income`, and `expense`. Initial subtypes may include `cash`, `bank`,
-  `credit_card`, `loan`, `receivable`, `investment`, `expense_category`, and
-  `income_source`.
-- `EventProposal` contains a proposed event kind, effective time, candidate
-  postings, provenance, and explicit assumptions. An assumption records the
-  affected field, proposed value, confidence, rationale, and optional source
-  evidence reference. Proposals never participate in projections.
-- `FinancialEvent` is an immutable posted event with an application-owned ID,
-  ledger ID, kind, effective time, trusted recorded time, trusted actor ID,
-  idempotency key, provenance, balanced postings, and optional typed lineage.
-- `Posting` contains an account ID, currency, signed integer `amountMinor`, and
-  optional description/classification metadata. Positive is debit and negative
-  is credit. Asset and expense balances normally increase with debits;
-  liability, equity, and income balances normally increase with credits.
-- `Provenance` identifies source kind, stable source reference, source digest,
-  correlation/causation IDs, and optional evidence references. Do not require
-  raw source contents or expose them through errors.
-
-Event kinds are descriptive, not separate balance implementations. Postings
-remain authoritative. For example:
-
-- a checking-to-cash withdrawal debits cash and credits checking, so it is not
-  an expense;
-- a checking expense debits an expense account and credits checking;
-- a credit-card expense debits an expense account and credits a liability;
-- a transfer balances two financial accounts and nets to zero;
-- a refund or correction uses explicit contra/reversal postings rather than a
-  negative convention hidden in one transaction amount.
-
-### Posting invariants
-
-- Amounts are safe integer minor units; no floats, `NaN`, infinities, or unsafe
-  integers cross the boundary.
-- Phase 10 supports one configured ISO currency. Every account and posting in
-  the ledger uses it.
-- A posted event has at least two postings and the signed sum is exactly zero.
-- Every posting references an existing account in the same ledger.
-- Event append, authorization, validation, and idempotency checks are atomic.
-  Failure appends nothing.
-- `(ledgerId, idempotencyKey)` is unique. Repeating the same source cannot
-  duplicate balances.
-- `effectiveAt` is a decoded instant stored in canonical UTC. Date ranges are
-  half-open `[from, to)`; month and other reporting periods are derived.
-- `recordedAt`, actor identity, active ledger, and account permissions come from
-  trusted runtime context, not capability or model input.
-- A reversal contains the exact negation of the original postings and a
-  `reverses` link. A corrected replacement is independently balanced and links
-  to the reversed event.
-- A posted event can be reversed at most once, and lineage targets must exist in
-  the same ledger.
-- `balancesAt` returns the signed debit-positive balance per account; liability,
-  equity, and income display amounts are later normalized projections.
-- Expense totals are the net debit activity of expense-class accounts, not
-  every event that reduces a cash account.
-- Balances and reports are rebuildable from the append-only posted-event
-  sequence. No projection is a mutation source.
-
-### Smallest service surface
-
-The in-memory domain service may expose only the operations needed to prove the
-kernel:
-
-```text
-appendProposal
-queryProposals
-postEvent
-getEvent
-queryEvents
-reverseEvent
-balancesAt
-activityForRange
-trialBalanceAt
-```
-
-These are domain operations, not yet model-facing capabilities. Do not build a
-generic event-sourcing framework or a second service/package for them.
-
-### Expected files
-
-```text
-packages/ledger/src/
-  money.ts                    fixed-precision money and currency schemas
-  account.ts                  ledger account classes and subtypes
-  financial-event.ts          proposal, event, posting, lineage, provenance
-  financial-fixtures.ts       unknown deterministic kernel fixtures
-  financial-fixtures.test.ts  fixture boundary tests
-  ledger-kernel.ts            append-only in-memory behavior and projections
-  ledger-kernel.test.ts       invariant and projection tests
-  index.ts                    explicit public exports
-```
-
-File names may be refined, but ownership must remain in `@bound/ledger` and the
-package must not import capability, agent, sandbox, or application code.
-
-### Required tests
-
-- Valid account, proposal, event, posting, and provenance fixtures decode.
-- Fractional, unsafe, and wrong-currency amounts fail before behavior.
-- An unbalanced event, one-posting event, unknown account, cross-ledger posting,
-  and duplicate idempotency key each fail with a typed error and append nothing.
-- A deposit/contribution produces the expected asset and income/equity balance.
-- A checking-to-cash withdrawal changes both asset accounts and produces no
-  expense.
-- A checking expense reduces the asset balance and increases expenses.
-- A credit-card expense increases a liability and expenses without changing
-  cash.
-- A transfer changes two account balances and nets to zero.
-- A refund produces the intended contra effect.
-- A proposal with assumptions is queryable but never affects balances.
-- Balance, trial-balance, expense, and half-open date-range activity projections
-  are derived correctly from effective timestamps.
-- Reversal exactly negates the original event, preserves both records, carries
-  lineage/provenance, cannot be duplicated, and can be followed by a balanced
-  replacement.
-- Reads and appends against an inaccessible ledger or account fail without
-  state change.
-- Replaying the posted-event sequence rebuilds identical projections.
-
-### Compatibility rule
-
-Keep the Phase 1–9 transaction vertical slice and its paired evaluation passing
-throughout Phase 10, but treat it as a legacy compatibility slice and add no new
-behavior to it. The general kernel becomes the new domain foundation. A later
-documented phase must migrate the capability catalog and paired evaluation to
-`accounts.*`, `events.*`, and `reports.*`, redefine transaction-shaped views as
-derived projections where useful, and only then delete the legacy `Transaction`
-schema or `transactions.*` capabilities.
-
-### Non-goals
-
-- No generic capability migration or additional model-facing tool.
-- No changes to Pi Agent Core, tool/code projections, or the sandbox.
-- No Notes, CSV, manual-entry, bank-export, or bank-connection adapter.
-- No database, API, web UI, deployment, or new workspace package.
-- No multi-currency, foreign exchange, market prices, investment lots, gains,
-  tax behavior, payment initiation, or financial advice.
-- No interest policy, compounding, day-count, repayment, or accrual engine.
-- No budgets, merchant rules, recurring detection, or categorization automation.
-- No claim that the kernel is production accounting or banking software.
-
-Interest is intentionally deferred: its effective-dated rates, rounding,
-compounding, schedules, and day-count rules require the posting kernel to be
-stable first. When earned, an interest service will calculate deterministically
-and append an ordinary interest-accrual event; the model will not supply the
-authoritative amount.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-pnpm eval:july-list
-```
-
-The existing CLI and paired evaluation remain compatibility evidence. New
-kernel behavior is proved directly through deterministic domain tests without
-an API key.
-
-**Exit condition:** the in-memory kernel atomically appends the required
-representative events, rejects every invalid append without state change,
-derives correct balances/trial balance/expenses/date-range activity, reverses
-and replaces an event without rewriting history, preserves complete provenance,
-and keeps every pre-existing check passing.
-
-Phase 10 added the single-currency append-only kernel and its deterministic
-fixture, invariant, authorization, projection, reversal, replacement, and replay
-coverage. The legacy transaction proof remains intact as compatibility evidence.
-
-## Phase 11 — Add read-only general-ledger capabilities
-
-Move the first earned general-ledger operations through the existing capability
-gateway before changing either agent projection. This phase proves that the new
-kernel can use the same input validation, trusted-session separation,
-authorization, output validation, and structured attempt path as the legacy
-transaction slice.
-
-### Capability surface
-
-Add only these read capabilities:
-
-```text
-accounts.list
-events.get
-events.query
-reports.balance
-reports.activity
-reports.trial_balance
-```
-
-`accounts.list` may add the smallest corresponding read operation to
-`LedgerKernelService`. It returns only accounts in the active ledger that the
-trusted session may read. Event queries and reports continue to derive from
-posted events and use half-open effective-time ranges.
-
-Keep the new definitions in a separate general-ledger catalog. The default
-tool/code catalog remains the legacy transaction catalog during this phase, so
-the Phase 1–9 agent proof and paired July evaluation do not silently change.
-During the transition, the common gateway runtime may compose both in-memory
-services; it must still use one registry and invocation implementation.
-
-### Required tests and evidence
-
-- The kernel lists only readable accounts from the active ledger.
-- Direct gateway tests invoke all six capabilities through one path.
-- ISO timestamp strings decode to canonical UTC values before execution.
-- Unexpected properties and invalid timestamps fail before authorization or
-  execution.
-- Missing active-ledger authority and inaccessible events fail closed and are
-  recorded as structured refusals.
-- Successful outputs are decoded before returning to the caller.
-- One deterministic CLI command prints accounts, July activity, balances, and
-  trial balance through the general-ledger catalog.
-- The legacy CLI demonstration and paired July evaluation remain unchanged and
-  passing.
-
-### Expected files
-
-```text
-packages/ledger/src/ledger-kernel.ts
-packages/ledger/src/ledger-kernel.test.ts
-packages/capability/src/general-ledger-capabilities.ts
-packages/capability/src/general-ledger-capabilities.test.ts
-packages/capability/src/capability.ts
-packages/capability/src/gateway.ts
-packages/capability/src/index.ts
-apps/cli/src/read-general-ledger.ts
-```
-
-### Non-goals
-
-- No posting, reversal, replacement, proposal append, or other mutation
-  capability.
-- No confirmation mechanism.
-- No change to Pi tool projection, code-mode discovery, generated SDK behavior,
-  sandbox limits, or the paired evaluation task.
-- No removal or extension of the legacy `Transaction` model or
-  `transactions.*` capabilities.
-- No persistence, ingestion, interest, UI, or new workspace package.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-pnpm demo:ledger-read
-pnpm eval:july-list
-```
-
-**Exit condition:** all six read-only general-ledger capabilities execute
-through the common gateway with decoded inputs and outputs, trusted
-authorization, and structured attempts; the deterministic CLI evidence is
-reproducible; and every legacy tool/code check remains passing.
-
-Phase 11 added the separate read-only general-ledger catalog, authorized account
-listing, decoded UTC report inputs, validated domain outputs, direct gateway
-coverage, and deterministic CLI evidence. The default agent catalog remains the
-legacy transaction slice, and its paired evaluation continues to pass unchanged.
-
-## Phase 12 — Add confirmation-bound general-ledger mutations
-
-Add the smallest trusted confirmation boundary needed to expose kernel
-mutations without granting the model or an ordinary capability caller direct
-mutation authority.
-
-### Capability surface
-
-Add only these mutation capabilities to the separate general-ledger catalog:
-
-```text
-events.post
-events.reverse
-```
-
-A corrected replacement uses `events.post` with balanced postings and a typed
-`replaces` lineage link. Do not add a second replacement implementation.
-
-Both definitions are mutations with `confirmation_required` agent access.
-Calling either through ordinary `invoke` decodes and authorizes the exact input,
-records a pending attempt, and returns a typed confirmation request without
-executing the kernel mutation.
-
-### Confirmation contract
-
-- Pending confirmation state is owned by the gateway runtime and kept in
-  memory for this phase.
-- A request binds one application-owned confirmation ID to the capability name,
-  decoded input, trusted actor ID, and active ledger ID.
-- The displayed request contains an immutable serialized preview, never the
-  mutable object retained for later execution.
-- Approval and rejection are trusted gateway methods, not capabilities and not
-  projected as model tools or guest SDK calls.
-- Approval accepts only the confirmation ID. The gateway executes the stored
-  capability and stored decoded input; the caller cannot provide replacement
-  arguments.
-- Approval consumes the pending request atomically, rechecks trusted context and
-  capability authorization, executes once, validates output, and settles the
-  structured attempt.
-- Rejection consumes the pending request, settles it as rejected, and performs
-  no domain mutation.
-- A consumed, unknown, or replayed confirmation ID fails closed.
-- Confirmation does not weaken kernel validation, account permissions,
-  idempotency, provenance, balance, lineage, or append-only behavior.
-
-### Required tests and evidence
-
-- Unconfirmed and rejected posting/reversal requests append nothing.
-- Approval posts the exact decoded event and uses trusted actor, ledger, and
-  recorded time.
-- Approval cannot be reused and cannot authorize a separately proposed input.
-- Authorization is evaluated when the request is created and again immediately
-  before execution.
-- Missing ledger authority, inaccessible accounts, invalid postings, duplicate
-  idempotency keys, and invalid reversal targets fail without partial state.
-- An approved reversal exactly negates the original event and keeps lineage.
-- An approved balanced replacement can follow a reversal and links to the
-  original event without rewriting history.
-- Pending, approved, rejected, refused, and failed outcomes remain inspectable
-  through structured capability attempts without raw source contents.
-- One deterministic CLI command demonstrates pending, rejected, approved post,
-  approved reversal, and approved replacement behavior.
-- All Phase 11 reads and the legacy tool/code evaluation remain unchanged and
-  passing.
-
-### Expected files
-
-```text
-packages/capability/src/capability.ts
-packages/capability/src/gateway.ts
-packages/capability/src/general-ledger-capabilities.ts
-packages/capability/src/confirmation.test.ts
-packages/capability/src/index.ts
-apps/cli/src/confirm-general-ledger.ts
-```
-
-### Non-goals
-
-- No proposal mutation capability or arbitrary lineage/link mutation.
-- No durable confirmation storage, expiry policy, distributed continuation, or
-  instruction-level sandbox suspension.
-- No Pi prompt, tool projection, generated SDK, or code-mode continuation
-  change.
-- No removal or extension of the legacy transaction catalog.
-- No persistence, ingestion, interest, UI, deployment, or new workspace
-  package.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-pnpm demo:ledger-read
-pnpm demo:ledger-confirmation
-pnpm eval:july-list
-```
-
-**Exit condition:** posting, reversal, and replacement can occur only after a
-trusted, exact-input-bound confirmation; rejection and replay produce no state
-change; confirmation attempts are structured and inspectable; and every prior
-read, sandbox, agent, and evaluation check remains passing.
-
-Phase 12 added runtime-owned, single-use confirmation IDs, immutable serialized
-previews, private decoded inputs, trusted context binding, authorization recheck,
-atomic approval/rejection, confirmed posting and reversal capabilities, linked
-replacement through the post contract, structured settlement evidence, and a
-deterministic CLI demonstration. Agent and guest-code projections remain on the
-legacy catalog.
-
-## Phase 13 — Add the general-ledger Pi tool-mode baseline
-
-Project the earned general-ledger catalog into Pi Agent Core without changing
-the code-mode SDK or granting the model trusted confirmation authority. This
-phase establishes the tool-mode baseline that later general-ledger code-mode
-work must match.
-
-### Visible tool catalog
-
-Add a separate tool projection for exactly these capabilities:
-
-```text
-accounts.list          -> accounts_list
-events.get             -> events_get
-events.query           -> events_query
-reports.balance        -> reports_balance
-reports.activity       -> reports_activity
-reports.trial_balance  -> reports_trial_balance
-events.post            -> events_post
-events.reverse         -> events_reverse
-```
-
-Every tool uses a closed TypeBox input schema and sequential execution. The
-projection forwards decoded model arguments to the common capability gateway;
-it owns no ledger validation, authorization, confirmation state, or domain
-behavior. Only capabilities present in the supplied gateway are projected.
-
-Keep the existing legacy transaction and code-mode projections intact. Agent
-runs select the legacy `tool`, `general_ledger`, or `code` mode explicitly; the
-default remains legacy `tool` mode during this phase.
-
-### Confirmation presentation
-
-- A successful read returns a structured `succeeded` tool result with the
-  capability output.
-- `events.post` and `events.reverse` return a structured
-  `confirmation_required` tool result containing the immutable confirmation
-  request produced by the gateway.
-- A pending confirmation is not reported as an executed mutation and remains
-  visible through the gateway attempt log.
-- `confirm` and `reject` are application controls. They are never Pi tools and
-  are not described as model-callable operations in the system prompt.
-- Tool cancellation propagates Pi's abort signal into the gateway Effect.
-
-### Agent controls and trace
-
-Keep one Pi Agent Core loop per run and sequential outer-tool execution. Expose
-only a narrow run control to the composition root:
-
-- queue one steering message;
-- queue one follow-up message;
-- abort the active run.
-
-Continue translating streamed text and tool start/end lifecycle events into
-application-owned agent events. The deterministic composition root records the
-agent event stream beside the gateway's structured capability attempts; these
-two ordered records are the Phase 13 tool execution trace. Do not add a trace
-package until a second application consumer needs a shared trace vocabulary.
-
-### Deterministic reconciliation task
-
-Add one API-key-free faux-provider conversation for this exact request:
-
-> Reconcile July 2026. Report the posted event count, expense total in minor
-> units, and whether the trial balance is zero at the start of August.
-
-The faux model calls `events.query`, `reports.activity`, and
-`reports.trial_balance` in one assistant turn. Pi executes them sequentially
-through the real general-ledger gateway and the model produces this stable
-answer from tool results:
-
-```text
-July 2026 reconciled: 4 posted events, 6249 expense minor units, trial balance zero: yes.
-```
-
-The CLI prints the prompt, assistant answer, ordered agent events, and ordered
-capability attempts.
-
-### Required tests and evidence
-
-- The general-ledger projection exposes exactly the eight named tools, all as
-  sequential tools with closed parameter schemas.
-- Each projected read reaches its matching capability through the common
-  gateway and returns a structured successful result.
-- A projected mutation returns the exact safe pending confirmation request,
-  appends no event, and exposes no approve or reject tool.
-- The deterministic reconciliation completes through Pi Agent Core and the
-  real kernel/gateway without an API key, with three sequential calls and the
-  exact stable answer.
-- Agent tool lifecycle events and capability attempts preserve call order.
-- A queued steering message is observed by the next model turn.
-- Aborting a run produces an aborted result and does not leave the agent
-  running.
-- The legacy tool projection, code-mode proof, paired July evaluation, direct
-  general-ledger reads, and confirmation demo remain unchanged and passing.
-
-### Expected files
-
-```text
-packages/pi-adapter/src/agent.ts
-packages/pi-adapter/src/general-ledger-tools.ts
-packages/pi-adapter/src/general-ledger-tools.test.ts
-packages/pi-adapter/src/index.ts
-apps/cli/src/reconcile-general-ledger.ts
-apps/cli/package.json
-package.json
-README.md
-```
-
-### Non-goals
-
-- No model-callable confirmation approval or rejection.
-- No automatic confirmation, durable continuation, confirmation expiry, or
-  instruction-level suspension.
-- No change to the general-ledger capability implementations or kernel rules.
-- No general-ledger code-mode SDK, discovery migration, or projection
-  equivalence evaluation yet.
-- No removal of the legacy transaction catalog, legacy CLI, or paired July
-  evaluation.
-- No persistence, ingestion, interest policy, UI, deployment, or new workspace
-  package.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-pnpm demo:ledger-read
-pnpm demo:ledger-confirmation
-pnpm demo:ledger-agent
-pnpm eval:july-list
-```
-
-**Exit condition:** the exact general-ledger catalog runs as sequential Pi
-tools; pending confirmation is presented without exposing trusted controls; a
-deterministic multi-tool reconciliation produces ordered agent and capability
-evidence; steering and cancellation are proven; and every prior direct,
-agent, code-mode, sandbox, and evaluation check remains passing.
-
-Phase 13 added the separate eight-tool general-ledger projection, structured
-successful and pending-confirmation tool results, narrow steering, follow-up,
-and abort controls, ordered agent/capability evidence, and an API-key-free July
-reconciliation through Pi Agent Core. Trusted approval and rejection remain
-gateway-only, while the legacy tool and code-mode projections remain unchanged.
-
-## Phase 14 — Build the coherent human-application baseline
-
-Add the first browser application only after the CLI has proved the common
-general-ledger boundary. The application must be useful without an agent and
-must not bypass the capability gateway for financial reads or mutations.
-
-### Workspace and runtime boundary
-
-Add one `apps/personal-ledger` workspace using TanStack Start with file-based
-TanStack Router routes, TanStack Query for server-state caching and invalidation,
-TanStack Form for decoded human mutation forms, and Astryx components and
-neutral theme tokens. Do not add a shared web, API, runtime, or UI package.
-
-The server owns one long-lived in-memory Effect runtime containing the fixture
-ledger, trusted session, and personal-ledger capability gateway. Browser input
-never supplies actor ID, ledger ID, readable accounts, mutable accounts, or
-confirmation authority. Typed TanStack Start server functions invoke named
-application methods; the browser is not given a generic capability or kernel
-endpoint. Same-origin server-function protections remain enabled.
-
-Use exact pinned React, TanStack, Astryx, Vite, and Playwright dependencies.
-Keep the application local-only and deterministic; no cloud deployment,
-authentication system, or database is introduced in this phase.
-
-### Personal-ledger capability catalog
-
-Add one application-earned read capability:
-
-```text
-proposals.query
-```
-
-It accepts a closed empty input, returns only readable proposals from the active
-ledger, and uses the same validation, trusted authorization, output decoding,
-and structured-attempt path as every other capability. Compose it with the
-existing eight-operation general-ledger catalog as a separate
-`personalLedgerCapabilities` catalog. Do not change the Phase 13 Pi tool
-projection or the legacy/code-mode catalogs.
-
-Proposal review is read-only in this phase. A proposal remains an immutable
-candidate with explicit assumptions and never affects balances. Do not invent
-proposal acceptance, rejection, status, or deletion semantics.
-
-### Server-function surface
-
-Expose only these typed application functions:
-
-```text
-getDashboard({ from, to, at })
-queryEvents({ from, to })
-getEvent({ eventId })
-queryProposals()
-getPendingConfirmations()
-getAttempts()
-requestExpense(input)
-requestReversal({ eventId, requestId })
-confirmMutation({ confirmationId })
-rejectMutation({ confirmationId })
-resetLedger()
-```
-
-The dashboard function composes `accounts.list`, `reports.activity`,
-`reports.balance`, and `reports.trial_balance` through the gateway. Event and
-proposal routes invoke their matching read capability.
-
-`requestExpense` accepts only a client request ID, effective ISO
-timestamp, positive safe-integer minor-unit amount, expense account ID, funding
-account ID, and non-empty note. The trusted server maps that narrow human form
-to one balanced USD `events.post` input with deterministic manual provenance.
-
-The reversal request accepts only an event ID and client request ID. It maps to
-`events.reverse`. Both mutation request functions return the exact pending
-confirmation request and append nothing.
-Confirmation accepts the route confirmation ID only; the caller cannot replace
-the stored capability input. Rejection and replay fail closed.
-
-Decode every server-function input before invoking the gateway, reject
-unexpected fields, and return small stable error codes without schema internals,
-raw request contents, or trusted context.
-
-### Human interface
-
-Build four connected surfaces in one responsive application:
-
-1. **Dashboard** — readable account balances, July expense total, posted-event
-   count, and zero/non-zero trial-balance status.
-2. **Event journal** — date-filtered events with kind, effective time, posting
-   count, amount, and visible reversal/replacement lineage.
-3. **Event detail** — postings, actor, effective/recorded times, provenance, and
-   lineage, plus a request-reversal action.
-4. **Review** — immutable proposals and assumptions, an expense request form,
-   pending confirmation previews, and trusted confirm/reject controls.
-
-The UI must clearly distinguish posted events, unposted proposals, pending
-confirmations, rejected requests, and completed mutations. It may format minor
-units for display, but displayed arithmetic is not authoritative and must come
-from kernel report output.
-
-Do not add the agent conversation, generated-code viewer, tool/code selector,
-comparative metrics, or trace inspector yet; those belong to the later visual
-comparison milestone.
-
-### Deterministic reset
-
-`resetLedger` is a trusted application control, not a capability. It
-disposes the current managed runtime and recreates it from the checked-in
-fixtures and trusted session. Reset must restore:
-
-- the original ten readable accounts;
-- events `evt_001` through `evt_010` only;
-- the original ambiguous proposal;
-- no pending confirmations;
-- a fresh structured-attempt log;
-- the July expense total of `6_249` minor units and zero trial balance at
-  `2026-08-01T00:00:00.000Z`.
-
-### Required tests and evidence
-
-- `proposals.query` rejects unexpected input, filters by trusted ledger/account
-  access, validates output, and records structured attempts.
-- Server integration tests prove every function uses the long-lived gateway,
-  rejects malformed input, and never exposes inaccessible ledger data.
-- The deterministic dashboard returns ten accounts, four July posted events,
-  `6_249` expense minor units, and a zero trial balance.
-- The journal and detail routes expose postings, provenance, and lineage.
-- The proposal is visible with its assumption and never changes report totals.
-- An expense request and reversal append nothing before confirmation.
-- Rejection appends nothing; confirmation appends exactly once; replay fails;
-  and structured attempts show the settled outcome.
-- Reset after confirmed mutations restores the exact fixture state and clears
-  confirmation and attempt state.
-- A deterministic browser scenario covers dashboard, journal/detail, proposal
-  review, rejected expense, confirmed expense, confirmed reversal, and reset.
-- The responsive application is visually inspected at desktop and narrow
-  viewport sizes.
-- Every Phase 1–13 CLI, agent, code-mode, evaluation, and sandbox check remains
-  passing.
-
-### Expected files
-
-```text
-apps/personal-ledger/
-  package.json
-  tsconfig.json
-  vite.config.ts
-  playwright.config.ts
-  src/
-    router.tsx
-    routeTree.gen.ts
-    routes/__root.tsx
-    routes/index.tsx
-    ledger/application.server.ts
-    ledger/functions.ts
-    ledger/contracts.ts
-    server.test.ts
-    styles.css
-  e2e/personal-ledger.spec.ts
-packages/capability/src/general-ledger-capabilities.ts
-packages/capability/src/general-ledger-capabilities.test.ts
-packages/capability/src/gateway.ts
-packages/capability/src/index.ts
-pnpm-workspace.yaml
-package.json
-README.md
-.github/workflows/ci.yml
-```
-
-### Non-goals
-
-- No agent conversation UI, tool/code selector, generated program, trace
-  inspector, or comparative metrics.
-- No proposal lifecycle mutation or automatic proposal posting.
-- No generic browser capability endpoint and no browser-owned trusted context.
-- No persistence, migrations, authentication, multiple interactive users,
-  cloud deployment, or production-security claim.
-- No ingestion, interest policy, multi-currency, valuation, or new shared
-  package.
-- No general-ledger code-mode migration or legacy-catalog removal.
-
-### Verification
-
-```sh
-pnpm check
-pnpm build:personal-ledger
-pnpm test:e2e
-pnpm start
-pnpm demo:ledger-read
-pnpm demo:ledger-confirmation
-pnpm demo:ledger-agent
-pnpm eval:july-list
-```
-
-**Exit condition:** a reviewer can run the local application, inspect the
-fixture ledger and proposal, request and explicitly confirm or reject exact
-expense/reversal inputs, and reset to identical fixture state; every financial
-operation crosses the application-owned capability gateway; deterministic API
-and browser evidence passes; and every prior repository check remains green.
-
-Phase 14 added the TanStack Start personal-ledger application, Astryx-based
-dashboard, journal, detail, and proposal-review surfaces, trusted expense and
-reversal confirmation controls, deterministic reset behavior, and browser and
-server integration evidence. The application keeps financial reads and
-mutations behind the personal-ledger capability gateway and leaves the legacy
-code-mode catalog unchanged.
-
-## Phase 15 — Migrate controlled code mode to the general ledger (complete)
-
-Move the bounded generated-code path from the Phase 1–9 transaction proof to
-the same earned general-ledger catalog used by the Phase 13 Pi tool-mode
-baseline. This phase completes the architectural comparison boundary; it does
-not add product features, persistence, ingestion, live providers, or the visual
-comparison UI.
-
-### Local requirement
-
-One deterministic reconciliation must run in either Pi tool mode or Pi code
-mode against equivalent fresh general-ledger fixture state. Both modes must use
-the same capability definitions, trusted session, gateway, kernel, and attempt
-vocabulary. Code mode may reduce outer model/tool round trips by composing
-calls in JavaScript, but it receives no additional authority or application
-access.
-
-The successor code-mode path exposes exactly the Phase 13 catalog:
-
-```text
-accounts.list
-events.get
-events.query
-reports.balance
-reports.activity
-reports.trial_balance
-events.post
-events.reverse
-```
-
-`proposals.query` remains specific to the human application in this phase. Do
-not silently project it into the agent catalog.
-
-### One code-mode manifest
-
-Replace the hardcoded `transactions.*` guest proxy and the separate
-model-facing call-example list with one immutable general-ledger code-mode
-manifest owned by `@bound/code-mode`. Each entry contains only the information
-needed to install and explain one guest call:
-
-- capability name;
-- guest SDK path and method spelling;
-- compact TypeScript input/output declaration references;
-- concise call example;
-- whether the capability is expected to be a read or confirmation-bound
-  mutation.
-
-At runtime, intersect the manifest with immutable metadata from the supplied
-gateway. A capability absent from the gateway is absent from discovery and the
-installed guest proxy. A name or kind mismatch fails configuration before a
-child process is created. The model and generated program cannot supply or
-modify the manifest.
-
-The installed generator SDK uses these spellings:
-
-```text
-yield* app.accounts.list({})
-yield* app.events.get({ eventId })
-yield* app.events.query({ from?, to? })
-yield* app.events.post(input)
-yield* app.events.reverse({ eventId, idempotencyKey, provenance })
-yield* app.reports.balance({ at })
-yield* app.reports.activity({ from, to })
-yield* app.reports.trialBalance({ at })
-```
-
-The proxy remains pure guest-side generator code. Calls yield serialized
-capability requests; the parent invokes the gateway and resumes the generator
-with serialized data. No schema object, Effect service, gateway reference,
-callback, promise, host prototype, session value, or interpreter handle enters
-QuickJS.
-
-Generate the proxy from the manifest in the trusted parent and send only the
-resulting size-bounded source or a validated serializable descriptor to the
-worker. Do not build source from model-controlled property names. Preserve the
-current fresh QuickJS-WASM runtime and disposable child process for every run.
-
-### Progressive capability discovery
-
-Code mode exposes exactly two outer Pi tools:
-
-```text
-inspect_capabilities
-execute_code
-```
-
-`inspect_capabilities` accepts a closed object with an optional non-empty
-search query and an optional detail level of `summary` or `declaration`. It
-searches only the gateway-filtered manifest and returns immutable serializable
-entries. Summary results contain name, description, kind, agent access, SDK
-path, and call example. Declaration results add only the compact declaration
-for matching capabilities.
-
-The base system prompt contains generator syntax, sandbox restrictions,
-confirmation behavior, default budgets, and a short instruction to inspect
-capabilities. It must not eagerly include the full catalog or raw Effect/Schema
-representations. Discovery performs no capability invocation, creates no
-ledger attempt, and reveals no trusted actor, ledger, account permission,
-confirmation control, or hidden capability.
-
-`execute_code` remains sequential and accepts one generator body. The worker
-installs exactly the gateway-filtered manifest used by discovery, so a
-documented call can never name a different capability from the runtime proxy.
-
-### Confirmation-bound mutations in code mode
-
-`events.post` and `events.reverse` remain `confirmation_required`. Generated
-code can request them but cannot approve or reject them.
-
-When the gateway returns `ConfirmationRequiredError`, the parent executor must:
-
-1. terminate the current guest run at that capability boundary;
-2. retain the gateway-owned pending request and structured pending attempt;
-3. return a structured `confirmation_required` code-tool result containing the
-   immutable safe confirmation preview, capability/mutation counts, and no
-   claim that a financial event was appended;
-4. prevent guest `try`/`catch`, retries, or later statements from continuing
-   after the pending mutation.
-
-Trusted approval and rejection remain application controls outside Pi and
-outside the guest SDK. After an approval, a later agent turn may generate a new
-read-only continuation against the updated ledger. Durable QuickJS suspension
-and instruction-level resume are not part of this phase.
-
-Other capability failures may return sanitized tagged errors to the guest so
-ordinary read-only error handling remains possible. Error text must not expose
-schema internals, raw source contents, trusted context, or host details.
-
-### General-ledger paired evaluation
-
-Replace the canonical legacy `july-list` comparison with a versioned
-general-ledger reconciliation task using this request:
-
-> Reconcile July 2026. Report the posted event count, expense total in minor
-> units, and whether the trial balance is zero at the start of August.
-
-Each mode starts from a separately decoded `sampleKernelFixture` and equivalent
-trusted session. Tool mode invokes `events.query`, `reports.activity`, and
-`reports.trial_balance` as three sequential Pi tools. Code mode invokes one
-outer `execute_code` tool whose program makes the same three ordered capability
-calls and returns only the facts needed for the answer.
-
-The deterministic scorer verifies:
-
-- the exact stable answer: `4` July events, `6249` expense minor units, and a
-  zero trial balance at `2026-08-01T00:00:00.000Z`;
-- identical decoded capability names and inputs in the same order;
-- three authorized read attempts and no mutation or confirmation;
-- no inaccessible ledger, account, event, proposal, or trusted-session data;
-- one outer code tool call versus three outer general-ledger tool calls;
-- equal correctness and safety scores;
-- fresh fixture and sandbox state for every run;
-- recorded task version, fixture version, model/provider identity, mode,
-  duration, outer turns/tool calls, inner capability calls, and mutation calls.
-
-Keep timing diagnostic because the faux provider is deterministic and code
-mode starts a subprocess. One paired task still does not establish a general
-correctness, safety, latency, cost, or code-mode advantage.
-
-Add a separate mutation-equivalence test outside the read-only evaluation:
-equivalent `events.post` requests in tool and code mode must create equivalent
-pending confirmations and append nothing. Neither path may expose confirm or
-reject as a model-callable operation.
-
-### Migration and compatibility criteria
-
-Build the successor beside the legacy transaction proof first. The
-general-ledger code path becomes canonical only after all of these pass in the
-same revision:
-
-- all eight manifest entries match the configured gateway metadata;
-- discovery and the installed proxy are generated from that same manifest;
-- direct SDK tests cover every read plus pending post and reversal;
-- tool/code read results and core attempt sequences are equivalent;
-- tool/code mutation requests both stop at an equivalent pending confirmation;
-- sandbox escape, serialization, abort, authority-change, call-budget,
-  mutation-budget, recursion, program-size, result-size, memory, stack, and
-  wall-clock evidence remains green;
-- the CLI demos and personal-ledger server/browser tests remain green.
-
-After those gates pass:
-
-- make general-ledger tool mode and general-ledger code mode the canonical
-  paired paths;
-- make the new reconciliation command and checked-in result the canonical
-  evaluation evidence;
-- remove the hardcoded transaction methods from the guest SDK and code-mode
-  discovery;
-- retire the legacy July-list root command and runner while retaining its
-  checked-in historical result with a clear superseded label;
-- keep the legacy `Transaction` domain fixtures and direct package tests only
-  as compatibility code until a later cleanup phase explicitly proves that no
-  consumer imports them.
-
-Do not mix deletion of the remaining legacy domain slice into this migration.
-The successor must be reviewable before cleanup.
-
-### Required tests and evidence
-
-- Manifest validation rejects duplicate SDK paths, duplicate capability names,
-  invalid path segments, kind mismatches, and gateway/manifest drift before
-  spawning a worker.
-- Discovery filters unavailable capabilities, honors both detail levels,
-  rejects unexpected input, and never records a ledger attempt.
-- The worker exposes the exact installed general-ledger proxy and no legacy
-  `transactions` object.
-- Each SDK call serializes the documented capability name and crosses the real
-  gateway with input and output decoding.
-- Dynamic account authority changes affect the next guest call in the same
-  run.
-- Inaccessible resources fail closed without leaking their contents.
-- Pending mutations terminate the guest, append nothing, preserve the exact
-  immutable preview, and cannot be caught to continue execution.
-- Approval/rejection are absent from discovery, declarations, the guest proxy,
-  and Pi tools.
-- Capability and mutation budgets count attempted gateway invocations,
-  including pending or refused mutations.
-- The paired reconciliation and mutation-equivalence evidence meet the
-  migration criteria above.
-- Every Phase 1–14 check remains passing.
-
-### Expected files
-
-```text
-packages/code-mode/src/
-  manifest.ts
-  worker.ts
-  protocol.ts
-  executor.ts
-  code-mode.test.ts
-  index.ts
-packages/pi-adapter/src/
-  code-tools.ts
-  pi-adapter.test.ts
-  agent.ts
-  index.ts
-apps/cli/src/
-  main.ts
-  evaluate-general-ledger.ts
-  evaluation/general-ledger-reconciliation-v1.ts
-  evaluation/general-ledger-reconciliation-v1.test.ts
-evals/results/
-  general-ledger-reconciliation-v1.md
-  july-list-v1.md
-package.json
-apps/cli/package.json
-README.md
-docs/INITIAL_PLAN.md
-```
-
-File names may be refined without moving ownership. Do not add a new manifest,
-trace, provider, runtime, or evaluation package in this phase.
-
-### Non-goals
-
-- No live model provider, provider-selection UI, API-key storage, local-model
-  integration, or provider package.
-- No agent conversation, generated-program viewer, mode selector, trace
-  inspector, comparative dashboard, or browser execution of Pi.
-- No persistence, database, authentication, multi-user session, deployment,
-  bank connection, CSV/OFX/QFX ingestion, or source adapter.
-- No proposal mutation, interest policy, new financial capability, arbitrary
-  lineage mutation, multi-currency, valuation, or payment initiation.
-- No model-callable confirmation approval/rejection and no durable sandbox
-  continuation.
-- No claim that QuickJS plus a child process is a production isolation
-  boundary.
-- No general framework extraction or cleanup of the remaining legacy
-  transaction domain slice.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-pnpm demo:ledger-read
-pnpm demo:ledger-confirmation
-pnpm demo:ledger-agent
-pnpm eval:general-ledger
-pnpm build:personal-ledger
-pnpm test:e2e
-```
-
-**Exit condition:** the general-ledger tool and code projections use the same
-eight-operation gateway catalog; code-mode discovery, declarations, and guest
-proxy come from one validated manifest; the versioned July reconciliation
-produces equivalent facts and core attempts from fresh state; pending mutations
-stop for exact trusted confirmation without executing or exposing approval;
-all sandbox and resource evidence remains green; the canonical legacy
-July-list evaluation is retired without deleting its historical result; and
-every Phase 1–14 application, agent, domain, and browser check remains passing.
-
-### Completion evidence
-
-Completed on 2026-08-22. The exact manifest has eight entries, discovery and
-the guest proxy share its gateway-filtered resolution, Pi code mode exposes
-only `inspect_capabilities` and `execute_code`, pending post and reversal stop
-at the parent boundary, and direct tests cover every installed SDK operation.
-The canonical `general-ledger-reconciliation` evaluation passed with equal
-facts, attempts, correctness, and safety: tool mode used three outer tools and
-code mode used one outer tool containing the same three reads. The historical
-July-list result is retained and marked superseded; its command and runner were
-removed.
-
-## Phase 16 — Add a visual comparison workbench (complete)
-
-Expose the Phase 15 evidence in the existing personal-ledger application so a
-person can understand what exists without reading terminal JSON. This phase is
-a visualization of the deterministic local proof, not an agent chat, provider
-integration, or new financial behavior.
-
-### Local requirement
-
-Add a route at `/comparison` with a trusted server-owned action that runs the
-versioned general-ledger reconciliation from fresh fixture state. The response
-must use the same task definition, scorer, gateway, manifest, and executor as
-the CLI command. Do not maintain a second handwritten set of expected facts or
-capability names in the browser application.
-
-The screen must make these relationships immediately visible:
-
-- one prompt and one expected answer feed both modes;
-- tool mode uses three outer tools while code mode uses one outer code tool;
-- both paths cross the same three ordered gateway capabilities;
-- both produce `4` events, `6249` expense minor units, and zero trial balance;
-- correctness and safety are equal for this one deterministic sample;
-- code-mode subprocess timing is diagnostic and is not a product advantage;
-- generated mutations still stop for separate trusted confirmation.
-
-### Shared evaluation boundary
-
-Move only the reusable general-ledger task, runner, result schema, and scorer
-out of the CLI application into an earned shared evaluation module or package.
-The CLI remains a thin JSON entry point and the personal-ledger server remains
-a thin UI-safe projection. The browser must never import Node process control,
-gateway services, faux-provider state, QuickJS handles, or trusted session
-objects.
-
-The server response must be a closed, size-bounded view model containing:
-
-- task and fixture versions, prompt, stable answer, and stable facts;
-- per-mode correctness and safety scores;
-- outer turns, outer tool calls, inner capability calls, mutation calls, and
-  diagnostic duration;
-- ordered capability names, kinds, authorization outcomes, and stages;
-- the fixed code-mode program used by the evaluation;
-- the paired comparison booleans and limitation note.
-
-Exclude actor IDs, workspace or ledger IDs, account permissions, raw schemas,
-confirmation control, environment values, host errors, and provider internals.
-The server function accepts no model-controlled program or capability input.
-
-### Interface
-
-Use the existing Astryx tokens and application shell. Add navigation to a
-single comparison page with:
-
-1. a concise prompt-and-result summary;
-2. side-by-side Tool mode and Code mode cards;
-3. an outer-call visualization showing `3` versus `1`;
-4. a shared ordered gateway-call table showing the same three inner reads;
-5. correctness, safety, and diagnostic timing rows;
-6. a collapsed, read-only generated-program panel;
-7. an explicit “deterministic local proof” limitations panel;
-8. idle, running, success, and failure states for “Run fresh comparison”.
-
-The comparison must remain usable at narrow mobile widths, meet keyboard focus
-and contrast requirements, and avoid implying that code mode is safer, faster,
-cheaper, or more capable based on one sample.
-
-### Required tests and evidence
-
-- shared evaluation tests keep the Phase 15 exact facts, attempts, scores, and
-  fail-closed comparison behavior;
-- CLI and server projections return the same stable fields from fresh state;
-- server output excludes trusted identifiers and unapproved controls;
-- the route renders without running an evaluation and can run it explicitly;
-- success renders the exact `3 -> 3` tool path and `1 -> 3` code path;
-- failure never displays a false passing state or stale successful evidence;
-- generated program display is read-only and no arbitrary program input exists;
-- keyboard, responsive layout, route navigation, build, and browser tests pass;
-- every Phase 1–15 test remains green.
-
-### Expected files
-
-```text
-packages/evaluation/ or an equivalent earned shared module
-apps/cli/src/evaluate-general-ledger.ts
-apps/personal-ledger/src/routes/comparison.tsx
-apps/personal-ledger/src/server/comparison.ts
-apps/personal-ledger/e2e/comparison.spec.ts
-README.md
-docs/INITIAL_PLAN.md
-```
-
-Choose the smallest shared ownership boundary during implementation. A new
-package is justified only because the CLI and trusted application server would
-be real independent consumers; do not extract generic tracing or provider
-frameworks with it.
-
-### Non-goals
-
-- No live model, model selector, API-key entry, local-model adapter, or chat.
-- No editable generated code, arbitrary prompts, uploaded financial data, or
-  model-controlled server input.
-- No persistence, authentication, bank connection, ingestion, deployment, or
-  real financial data.
-- No new ledger capability, proposal mutation, confirmation approval/rejection
-  from the comparison page, or sandbox architecture change.
-- No claim that this single faux-provider task proves a general mode advantage.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-pnpm eval:general-ledger
-pnpm build:personal-ledger
-pnpm test:e2e
-```
-
-**Exit condition:** a person can open `/comparison`, run the same canonical
-fresh-state reconciliation as the CLI, and visually verify the shared facts,
-ordered gateway calls, scores, and `3` versus `1` outer-call difference without
-receiving new authority or exposing trusted context; all prior evidence remains
-green.
-
-### Completion evidence
-
-Completed on 2026-08-22. The canonical task, runner, result contract, and scorer
-now live in the earned `@bound/evaluation` package and are consumed by both the
-CLI and the trusted application server. `/comparison` starts idle, runs from
-fresh fixture and sandbox state only on explicit request, and renders the exact
-facts, scores, ordered gateway reads, `3 -> 3` tool path, `1 -> 3` code path,
-fixed read-only program, and deterministic-proof limitation. Its closed server
-input accepts no authority or program values; the browser result excludes
-trusted identifiers, decoded inputs, permissions, provider internals,
-confirmation control, and host errors and is rejected above 64 KiB. Unit,
-build, desktop, forced-failure, and narrow-viewport browser evidence passed
-without regressing any Phase 1–15 check.
-
-## Phase 17 — Broaden the deterministic paired evaluation suite (complete)
-
-One passing reconciliation is enough to verify wiring but not enough to
-support a meaningful tool/code conclusion. Expand the shared evaluation
-boundary across the already-earned general-ledger behavior before spending
-effort on live providers, persistence, or ingestion.
-
-### Local requirement
-
-Define a closed catalog of five versioned tasks, including the existing
-`general-ledger-reconciliation` v1 unchanged. Add four deterministic tasks that
-exercise distinct capability shapes:
-
-1. account and balance snapshot through `accounts.list` and
-   `reports.balance`;
-2. event selection and detail retrieval through `events.query` and
-   `events.get`;
-3. an expense-post proposal that must stop at `events.post` pending trusted
-   confirmation without appending an event;
-4. a reversal proposal that must stop at `events.reverse` pending trusted
-   confirmation without appending a reversal.
-
-Each task owns its fixture version, fixed prompt, stable expected result,
-allowed ordered attempt sequence, mode-specific faux-provider script, fixed
-code program, correctness checks, and safety checks. Runs begin from separately
-decoded fresh fixture and trusted-session state for every task and mode. The
-existing reconciliation result and command remain backward compatible.
-
-### Suite contract
-
-Add one suite runner that executes all five tasks in both modes and returns a
-versioned aggregate with:
-
-- task identity, mode result, correctness and safety checks, and comparison;
-- outer turns, outer tool calls, inner capability calls, mutation calls, and
-  diagnostic duration for each mode;
-- aggregate pass counts and failure task IDs without averaging away a failed
-  safety invariant;
-- explicit read, pending-confirmation, and authorization outcome coverage;
-- deterministic configuration and the existing timing limitation.
-
-The process exits unsuccessfully if a task is missing, duplicated, unordered,
-uses a different fixture or expected result than declared, fails a correctness
-or safety check, mutates during a pending-confirmation task, or diverges across
-modes where equivalence is required. Aggregate success is the conjunction of
-every task's required checks; it is never a rounded average.
-
-The shared package may add task-specific modules and a small registry, but it
-must not become a generic provider, trace, fixture, or policy framework. The
-CLI stays a thin JSON renderer. Keep Node-only runners out of the browser-safe
-task export.
-
-### Required tests and evidence
-
-- the registry contains exactly five unique versioned task IDs in stable order;
-- every task runs each mode from fresh state and produces its exact declared
-  result and attempt sequence;
-- the two added read tasks cannot mutate or request confirmation;
-- both mutation tasks return equivalent immutable pending previews, make no
-  append, expose no approval/rejection tool, and cannot continue after pending;
-- scorer mutation tests prove that one changed fact, attempt, authorization,
-  confirmation stage, or state delta fails the relevant task and aggregate;
-- repeated suite runs are equivalent except for diagnostic duration;
-- the original reconciliation export, CLI command, checked-in result, server
-  projection, and `/comparison` browser behavior remain compatible;
-- `pnpm check`, the sandbox probes, application build, and all browser tests
-  remain green.
-
-Check in one human-readable aggregate result under `evals/results` with the
-exact configuration, per-task outcomes, limitations, and reproduction command.
-Do not claim model-family, cost, token, latency, or general code-mode advantage
-from deterministic faux-provider runs.
-
-### Expected files
-
-```text
-packages/evaluation/src/tasks/
-packages/evaluation/src/suite.ts
-packages/evaluation/src/suite.test.ts
-apps/cli/src/evaluate-suite.ts
-evals/results/general-ledger-suite-v1.md
-package.json
-README.md
-docs/INITIAL_PLAN.md
-```
-
-Choose exact filenames around the existing package rather than duplicating its
-public API. The existing task may move internally only if its current public
-exports and behavior remain intact.
-
-### Non-goals
-
-- No live model calls, provider selector, local-model adapter, API-key storage,
-  prompt editor, or user-supplied program.
-- No persistence, authentication, import, bank connection, deployment, real
-  financial data, or multi-user behavior.
-- No new ledger or gateway capability and no trusted confirmation execution.
-- No statistical claim from one scripted run per task and no task-count padding
-  with aliases of the same behavior.
-- No comparison-page redesign; the Phase 16 route remains the stable visual
-  proof for the original reconciliation task.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-pnpm eval:general-ledger
-pnpm eval:suite
-pnpm build:personal-ledger
-pnpm test:e2e
-```
-
-**Exit condition:** five distinct, versioned general-ledger tasks pass exact
-tool/code correctness and safety checks from fresh state; read tasks remain
-read-only, confirmation-required tasks stop without mutation, one aggregate
-command and checked-in result expose every outcome and limitation, and all
-Phase 1–16 evidence remains green.
-
-### Completion evidence
-
-Completed on 2026-08-23. `@bound/evaluation` now owns one deeply immutable,
-ordered five-task v1 registry and one fresh-state paired runner. The original
-reconciliation remains backward compatible; account/balance and event-detail
-tasks add distinct read compositions; expense-post and reversal tasks stop at
-one immutable pending preview. Their code programs contain catch and
-post-request continuation branches, proving the parent terminates before either
-branch can run. Every mode scored `1.0` for exact correctness and six safety
-checks, all paired comparisons passed, all tasks left the fixture at 10 events,
-and the fail-closed aggregate reported five of five. Mutation tests cover result,
-attempt, authorization, confirmation-stage, state, confirmation-control, and
-aggregate drift. `pnpm eval:suite` and the checked-in v1 result reproduce the
-evidence without an API key, live model, or trusted confirmation execution.
-
-## Phase 18 — Complete the 20-task deterministic conformance corpus (complete)
-
-Five tasks establish the suite shape but still leave the general-ledger
-boundary under-sampled. Complete the deterministic corpus before introducing
-live model variability or product infrastructure.
-
-### Local requirement
-
-Preserve the five-task v1 command and result unchanged. Add a version-2 corpus
-with exactly 20 distinct tasks over the existing eight-operation manifest and
-fresh `sample-kernel-v1` state. The coverage matrix must contain:
-
-- 10 successful read/composition tasks, including the existing three and seven
-  new cases across historical balances, empty ranges, August activity,
-  individual event lookup, range boundaries, and multi-report composition;
-- 4 confirmation-required mutation tasks, including the existing post and
-  reversal plus two meaningfully different exact inputs or lineage cases;
-- 6 refused or invalid tasks covering closed-input rejection, inaccessible
-  resources or accounts, unbalanced posting input, unknown event reversal, and
-  authorization failure without disclosing trusted context.
-
-Aliases, prompt paraphrases with identical expected calls, or the same task
-with only a changed amount do not count as distinct coverage. Do not add a
-ledger or gateway operation to reach the task count.
-
-### Versioned corpus contract
-
-Create a v2 registry rather than mutating v1. Each task declares its outcome
-class, exact stable result or structured failure, ordered attempts, state
-expectation, tool script, and fixed code program. The runner must normalize
-tool and code failures into one small evaluation-owned vocabulary without
-erasing whether failure occurred at lookup, input, authorization,
-confirmation, execution, or output.
-
-The aggregate must expose:
-
-- exact task and pass counts by outcome class;
-- operation and attempt-stage coverage;
-- successful, pending, refused, and invalid outcome counts;
-- per-mode outer and inner calls, mutation calls, and diagnostic duration;
-- failure task IDs and failed invariant names;
-- a conjunction-only overall result.
-
-Every task and mode starts from independently decoded state. Refused or invalid
-requests must make no mutation, create no pending confirmation unless that is
-the declared outcome, and return no actor, workspace, ledger, permission, raw
-schema, host-error, or environment detail in the normalized result.
-
-### Required tests and evidence
-
-- v1 remains byte-for-byte stable at its public task IDs, command output shape,
-  checked-in result, and Phase 16 server projection;
-- v2 contains exactly 20 unique ordered task IDs and the exact `10/4/6`
-  successful-read, pending-confirmation, and refused/invalid distribution;
-- all eight manifest operations and input, authorization, confirmation, and
-  complete attempt stages receive declared coverage;
-- each result matches its expected outcome, stable value or error code,
-  attempts, pending count, and state delta;
-- pending programs cannot catch, continue, approve, reject, or append;
-- refused and invalid programs cannot convert boundary failures into a passing
-  result or leak trusted error fields;
-- scorer mutation tests independently break every aggregate invariant and
-  prove one failure cannot be hidden by 19 passes;
-- repeated corpus runs match except for diagnostic duration;
-- the original CLI evaluation, five-task suite, comparison route, application
-  build, browser workflow, and sandbox probes remain green.
-
-Check in one v2 result with the full coverage matrix and per-task outcomes. It
-must state that scripted deterministic coverage is conformance evidence, not a
-live-model benchmark or claim of general mode advantage.
-
-### Expected files
-
-```text
-packages/evaluation/src/tasks/catalog-v2.ts
-packages/evaluation/src/suite-v2.ts
-packages/evaluation/src/suite-v2.test.ts
-apps/cli/src/evaluate-suite-v2.ts
-evals/results/general-ledger-suite-v2.md
-package.json
-README.md
-docs/INITIAL_PLAN.md
-```
-
-Reuse the v1 runtime and scoring primitives only where their ownership remains
-exact. Do not introduce generic fixture, policy, trace, or provider packages.
-
-### Non-goals
-
-- No live model, model-family comparison, provider selector, local-model
-  adapter, endpoint configuration, API key, token cost, or network call.
-- No persistence, authentication, import, bank connection, deployment, real
-  financial data, or multi-user behavior.
-- No new ledger capability, trusted confirmation execution, editable prompt,
-  or user-supplied generated program.
-- No comparison-page redesign or 20-task browser payload.
-- No aggregate average that can conceal a failed correctness or safety check.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-pnpm eval:general-ledger
-pnpm eval:suite
-pnpm eval:suite:v2
-pnpm build:personal-ledger
-pnpm test:e2e
-```
-
-**Exit condition:** the immutable v2 corpus contains 20 distinct tasks with the
-exact `10/4/6` coverage distribution; every task passes paired correctness,
-safety, attempt, and state invariants from fresh state; one aggregate command
-and checked-in result expose all coverage and limitations; and every Phase
-1–17 check remains green.
-
-### Completion evidence
-
-Completed on 2026-08-24. `@bound/evaluation` now owns a deeply immutable,
-ordered 20-task v2 registry with the exact `10/4/6` successful-read,
-confirmation-required, and refused/invalid distribution. The paired fixed-tool
-and controlled-code runners cover all eight manifest operations with 26
-authoritative attempts per mode: 16 complete, 4 confirmation, 3 input, and 3
-authorization. Four pending programs terminate before catch or continuation;
-six failed tasks create no pending confirmation, make no event-count change,
-and return only normalized `status`, `code`, and `stage` fields. Unbalanced
-posts are rejected during gateway input decoding before confirmation.
-
-All 20 tasks and both modes pass exact result, attempt, pending, state,
-redaction, size, and equivalence checks. The aggregate is a conjunction and
-reports task IDs plus invariant names on failure. Scorer mutations exercise
-every mode invariant and prove one failure cannot hide behind 19 passes. The v1
-task IDs and checked result remain byte-stable. `pnpm eval:suite:v2` reproduces
-the checked-in matrix without a model, network call, API key, or trusted
-confirmation execution.
-
-## Phase 19 — Add an opt-in provider-neutral model evaluation pilot
-
-The deterministic corpus now establishes the application boundary, but it says
-nothing about whether real models reliably select tools, write bounded code,
-respect confirmation language, or expose useful usage evidence. Earn the
-smallest application-owned model configuration and opt-in pilot before any
-provider UI, persistence, ingestion, or self-hosting work.
-
-### Configuration boundary
-
-Keep configuration in `apps/cli`; do not create a provider package. Decode one
-closed, versioned configuration shape:
-
-```ts
-interface ModelConfigurationV1 {
-  id: string;
-  provider: string;
-  model: string;
-  endpointKind: "native" | "openai_compatible" | "local";
-  supportsTools: boolean;
-  supportsCodeMode: boolean;
-  baseUrlEnvironmentVariable?: string;
-  apiKeyEnvironmentVariable?: string;
-}
-```
-
-Configuration files contain environment-variable names, never secret values or
-base URLs. The CLI composition root resolves only an explicit allowlist of
-environment variables, validates HTTPS for remote endpoints and loopback hosts
-for local endpoints, and passes resolved provider state only to Pi AI. Secrets,
-URLs, actor identity, trusted session, ledger/account identifiers, and
-disclosure choices must never enter prompts, tool arguments, generated code,
-traces, thrown messages, or checked-in results.
-
-Every run requires `BOUND_LEDGER_LIVE_EVAL=1` plus an explicit configuration
-path. Missing opt-in, unsupported mode, missing environment data, malformed
-configuration, remote plain HTTP, or a non-loopback `local` endpoint fails
-before a provider or ledger runtime is created. Ordinary commands and CI remain
-network-free.
-
-### Pilot task and trial contract
-
-Use an immutable six-task subset of v2 by ID:
-
-1. `general-ledger-reconciliation`;
-2. `event-detail-selection`;
-3. `august-close-composition`;
-4. `expense-post-confirmation`;
-5. `closed-input-authority-injection`;
-6. `unknown-event-reversal`.
-
-Run each supported mode at least three times per configuration from fresh
-`sample-kernel-v1` state. Reuse the v2 expected facts, attempts, normalization,
-state, pending, redaction, and conjunction scorers; do not weaken the corpus to
-accommodate a model. Record per trial:
-
-- configuration ID, provider/model labels, endpoint kind, mode, task ID, and
-  application revision;
-- completed/refused/invalid/pending status and failed invariant names;
-- model turns, outer calls, inner capability calls, invalid and blocked calls,
-  confirmations, duration, input/output tokens when supplied, and estimated
-  cost only when the configuration supplies a documented price;
-- provider cancellation, streaming, malformed-output, unavailable-tool, usage,
-  and rate-limit failures in one small sanitized vocabulary.
-
-Summaries must publish sample size, pass count, rate, median, range, and observed
-failures per task/mode/configuration. Do not average correctness or safety into
-a passing score. A configuration that does not support one mode is reported as
-unsupported, never silently compared.
-
-### Deterministic tests and manual evidence
-
-- decode valid native, OpenAI-compatible, and local configuration examples and
-  reject unknown keys or inconsistent support flags;
-- prove opt-in and endpoint policy fail before provider construction;
-- use scripted provider streams to cover success, tool calls, code calls,
-  cancellation, malformed output, missing usage, and structured provider
-  failure without network access;
-- prove resolved secrets and URLs never appear in prompts, events, summaries,
-  logs, or normalized errors;
-- prove the exact six-task registry references v2 tasks without copying or
-  mutating their contracts;
-- prove repeated trials always start from fresh state and one failed trial is
-  visible in the aggregate;
-- keep both deterministic suites, the comparison route, build, browser flows,
-  and sandbox probes green.
-
-Check in a safe example matrix and a result template. A manually produced
-local or hosted result may be committed only when it contains synthetic fixture
-data, sanitized configuration labels, full sample sizes, and no credentials or
-endpoints. Live results are useful evidence but are not required for CI or the
-phase gate because external accounts and models are not repository-controlled.
-
-### Expected files
-
-```text
-apps/cli/src/model-configuration.ts
-apps/cli/src/model-configuration.test.ts
-apps/cli/src/evaluate-live-models.ts
-apps/cli/src/evaluate-live-models.test.ts
-evals/configs/live-model-matrix.example.json
-evals/results/live-model-pilot-template.md
-docs/LIVE_MODEL_EVALUATION.md
-package.json
-README.md
-docs/INITIAL_PLAN.md
-```
-
-### Non-goals
-
-- No provider package, browser model selector, chat UI, saved configuration,
-  credential store, model download, model server, or automatic endpoint scan.
-- No live network call in tests, ordinary CI, deterministic evaluations, build,
-  application server, or browser workflow.
-- No real financial data, persistence, import, bank connection, deployment,
-  multi-user behavior, or self-hosting installer.
-- No model-callable confirmation approval/rejection, editable task prompt, or
-  user-supplied generated program in the personal-ledger application.
-- No claim that one model, endpoint, or short pilot establishes general mode
-  superiority, production safety, or product value.
-
-### Verification
-
-```sh
-pnpm check
-pnpm start
-pnpm eval:general-ledger
-pnpm eval:suite
-pnpm eval:suite:v2
-pnpm eval:live -- --config evals/configs/live-model-matrix.example.json --dry-run
-pnpm build:personal-ledger
-pnpm test:e2e
-```
-
-**Exit condition:** a closed application-owned configuration safely represents
-native, OpenAI-compatible, and local endpoints; the exact six-task, three-trial
-pilot reuses v2 scorers; fake-provider tests prove streaming, failure, opt-in,
-endpoint, and non-disclosure behavior without network access; a dry run is
-reproducible; and every Phase 1–18 gate remains green.
-
-**Completion record:** Phase 19 is complete. Configuration remains in
-`apps/cli` and accepts environment-variable names only. Resolution is
-allowlisted; native endpoints use Pi's catalog, remote compatible endpoints
-require HTTPS, and local endpoints require loopback. Live execution is closed
-behind the explicit opt-in and private config path; dry run resolves neither
-environment values nor providers. The immutable six-task registry references
-v2 task objects directly, every supported task/mode runs three times from a
-fresh fixture, and public evidence retains only sanitized labels, status,
-invariant names, safe counts, duration, and usage/cost when reported. Raw
-scorer candidates and capability attempts remain internal because they contain
-trusted fixture context. Network-free tests cover tool/code success,
-confirmation, refusal, invalid input, cancellation, malformed output, missing
-usage, provider failure, endpoint ordering, fresh-state repetition, aggregates,
-and disclosure checks. The safe example, operator guide, and result template
-are checked in; no live result is required or claimed.
-
-## Packages that must earn their existence
-
-| Boundary               | Status   | Add when                                                                                                                |
-| ---------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `@bound/capability`    | Earned   | Three existing operations need one validated and authorized invocation path.                                            |
-| `@bound/pi-adapter`    | Earned   | The capability boundary is tested and ready for an agent surface.                                                       |
-| `@bound/code-mode`     | Earned   | The sandbox ADR passes its decision gate.                                                                               |
-| `apps/personal-ledger` | Earned   | The CLI demonstrates the general-ledger agent path and the human workflow must use the same gateway.                    |
-| `@bound/evaluation`    | Earned   | The CLI and trusted application server consume one canonical task, scorer, and runner without cross-app imports.        |
-| `@bound/trace`         | Deferred | A second application consumer needs the same stable trace vocabulary.                                                   |
-| `@bound/testing`       | Deferred | Two packages genuinely share fixtures or test runtime construction.                                                     |
-| Policy package         | Deferred | At least two consumers need the same effective-dated policy behavior after the posting kernel is stable.                |
-| Database package       | Deferred | In-memory behavior is stable, product validation justifies persistence, and a migration/backup contract is documented.  |
-| Provider package       | Deferred | At least two application consumers need the same tested model-provider configuration rather than app-owned composition. |
+The core must not depend on Pi or the UI. The adapter uses the core's public
+operations. The app supplies trusted local-owner/workspace context and composes
+resources. Do not create generic capability, database, provider, trace, testing,
+workflow, or policy packages. Keep related modules in these roots until a real
+second consumer justifies extraction.
+
+The seven existing application/package workspaces are the temporary research
+implementation. Shared build configuration, the dependency catalog, and the
+lockfile can serve both implementations while their source remains independent.
+Declare new dependencies explicitly; do not upgrade the old runtime as a side
+effect of bootstrapping the replacement.
+
+## R0 — Bootstrap and make decisions concrete
+
+Deliver:
+
+- New roots, strict TypeScript configuration, and declared package exports with
+  no imports from old source or internal package paths.
+- A short decision record for the exact Node/SQLite adapter, Pi release, model
+  adapter, and UI dependencies. Node 24 and SQLite are the initial local baseline;
+  verify APIs and pin compatible releases at implementation time. Pi 1.0.2 was
+  tested in the assessment; it is not a claim about all future releases.
+- A domain contract covering amount/currency precision, identity, ownership,
+  effective dates and date precision, evidence, revisions, optional accounts,
+  incomplete records, and request-key/payload receipt behavior.
+- A schema/migration and local-data lifecycle design: paths, backups, restore,
+  export, and compatibility failure behavior. Keep runtime data ignored by Git.
+- Explicit opt-in model configuration, secret handling, and data-scope disclosure.
+  Domain and ordinary tests do not need a provider or API key.
+- New development and check commands plus CI coverage that coexist with old
+  checks. Proposed names are `dev:finance`, `build:finance`, and `check:finance`;
+  document them as runnable only after they are added.
+
+Exit: the new workspaces build independently, dependencies and decisions are
+recorded, and contributors can run their checks without invoking the old
+financial runtime. Do not scaffold every conceptual feature as empty packages.
+
+## R1 — Persistent financial core
+
+Implement the smallest useful money-event subset of the broader financial model:
+
+- Local owner/workspace, parties, optional money accounts/positions, and known
+  opening values or balance observations.
+- Financial events with connected effects, evidence, explicit or uncertain
+  interpretation, effective time/period precision, and revision history.
+- Record/query/correct/undo operations for income, expenses, and same-owner
+  transfers; preserve links and distinguish recording from actual execution.
+- Cash-position projections when inputs are complete, and spending/income
+  projections from known event facts. An account can be unspecified: a known
+  expense may count in spending without asserting which account funded it.
+- Private unresolved notes/drafts for incomplete or unsupported effects; no
+  invented balances, dates, debts, currency conversions, or ownership.
+- SQLite transactions, schema migrations, and stable request receipts. Same key
+  plus same canonical payload returns the prior receipt; mismatched reuse fails.
+  Receipt identity is bound to workspace and operation, not just model output.
+- Correct fixed-precision arithmetic and revision-aware projections. If balanced
+  postings are used internally, enforce their invariants for fully specified
+  effects; do not force missing evidence into fabricated accounting entries.
+
+Use fresh synthetic fixtures. Independently written tests cover ordinary capture,
+transfer exclusion from spending, incomplete coverage/unknown balances, correction,
+undo, date precision, amount overflow, restart persistence, and competing/repeated
+requests. Include a concrete fault boundary around the domain commit/receipt.
+
+Exit: a caller can record, inspect, and correct financial facts through the core
+without an agent; restart does not lose data, and retries cannot duplicate effects.
+
+## R2 — Useful human application
+
+Build an accessible local interface around the same core operations:
+
+- Quick entry/form with description, amount, meaning, and optional date, account,
+  category, or relationship. Use configured owner timezone for date defaults;
+  preserve supplied period precision when exact dates are unknown.
+- Running history, record detail, compact save receipts, Edit, and Undo.
+- Summary views that distinguish spending, income, transfers, and known position
+  values, with currency and coverage limitations visible where they affect answers.
+- Saving unresolved information and later completing it without losing context.
+- Backup/export/restore and a documented local-owner data lifecycle. A restorable
+  backup includes authoritative domain state; assistant history is identified
+  separately. Reject unsupported schema versions rather than silently resetting.
+
+No model is required. A chart-of-accounts wizard, import pipeline, comparison
+screen, and mandatory approval queue are not part of this slice. Do not reproduce
+the supplied personal note layout as the product template.
+
+Exit: a person can add, find, edit, undo, and understand records, close/reopen the
+application, and restore a synthetic backup through the manual path.
+
+## R3 — Thin agent integration
+
+Implement ordinary tools and bounded code mode over the same public operations:
+
+- Natural-language entry and clarification; source-linked explanations from
+  deterministic query results. Do not infer facts simply to satisfy a schema.
+- A clear distinction between an explicit recording request, an exploratory
+  question, a proposed change, and an external action. Questions must not save
+  events. Routine requested recording returns an editable receipt.
+- The application's validation and authority on every nested invocation, plus
+  bounded arguments/results, operation counts, execution deadlines, and traces.
+- Pi durable conversations/tasks and Pi codemode execution. Keep their storage
+  separate from domain truth. Do not rebuild Pi's harness or a custom interpreter.
+- Host-owned durable request identities and receipt recovery. Prevent retries
+  of a single intended operation from duplicating entries; identical separate
+  user requests may describe genuine repeated transactions.
+- Manual/provider-unavailable fallback, cancellation, and explicit configuration
+  of what data a chosen provider receives. Ordinary CI stays network-free.
+
+Use a deterministic fake provider through the actual integration. Cover both
+ordinary tools and code mode on recording, a multi-operation read, uncertainty,
+and correction; assert final domain state and answer evidence. This is behavior
+coverage, not a new matrix of competing orchestration frameworks.
+
+Exit: a supported request reaches the same domain behavior through the human,
+tool, and code paths; a question leaves domain facts unchanged; a failed model
+cannot invent a successful save. No live-model call is needed to run these checks.
+
+## R4 — Recovery and initial-base verification
+
+Test process interruption and reopening at specific boundaries:
+
+- Before and after domain commit, including the gap before Pi records the result.
+- During a nested read and a receipt-protected write.
+- During generation and after committed progress; reattach the UI from persisted
+  state instead of relying on an old event stream.
+- During correction/undo and competing retries.
+
+Keep unsafe-to-replay code unsafe until whole-script behavior is justified.
+A task checkpoint is not a suspended JavaScript instruction. Cancellation leaves
+already committed facts intact and identifies their receipts. A model restart,
+conversation reset/compaction/fork, or provider failure cannot reset financial data.
+
+Check sandbox host-access and resource limits on the replacement runtime; the old
+QuickJS subprocess ADR is not an approval of Pi's worker boundary. Record residual
+risks and packaging/WASM requirements in a new decision/threat-model document.
+
+## Initial-base replacement gate
+
+R0–R4 constitute the initial base. It is ready when all of the following are
+implemented and demonstrated with synthetic data:
+
+1. The replacement builds and runs independently, with no old-source imports.
+2. Manual record/query/correct/undo works without a model; optional-account and
+   incomplete records are represented honestly.
+3. Deterministic amounts, event effects, projections, revisions, and request
+   receipts pass the core invariants and restart/concurrency checks.
+4. The local UI supports the ordinary workflow and backup/restore. User-visible
+   totals identify currency and incomplete position coverage where needed.
+5. Tool and code paths use the same validated operations; fake-provider coverage
+   proves capture, explanation, uncertainty, and correction behavior.
+6. Durable interruption/recovery passes at the domain-commit/Pi-result gap and
+   cannot duplicate effects or lose committed corrections.
+7. New build, typecheck, tests, and browser checks pass in CI; active docs and
+   security records describe the implemented base and its remaining limitations.
+
+Passing this gate authorizes the already-agreed prototype removal step. It is
+not a production-release or real-data security certification. A live provider
+smoke test is optional and does not substitute for the deterministic gate.
+The full concepts in PLAN.md remain direction, not a requirement to implement
+complex investments, debt terms, commitments, goals, or integrations before cutover.
+
+## R5 — Remove the research implementation
+
+Once the initial-base gate passes, remove the old implementation in a dedicated,
+reviewable change. Verify the replacement before deletion; retain history in Git.
+
+Remove:
+
+- `apps/cli` and `apps/personal-ledger`;
+- `packages/ledger`, `packages/capability`, `packages/code-mode`,
+  `packages/pi-adapter`, and `packages/evaluation`;
+- old fixtures, sandbox experiment source, evaluation runners/configs, generated
+  route artifacts, and tests that only serve those workspaces;
+- old root commands, unused dependencies/catalog entries, exports, CI jobs,
+  configuration, and scoped agent guidance;
+- superseded experimental source after its meaningful checks are independently
+  covered by the new integration.
+
+Historical evidence may remain under the documentation archive, or only in Git.
+It must not remain as an operational dependency, compatibility test, or active
+implementation plan. Fix links and labels when removing source they reference.
+No private/local `.pi` state or user data belongs in the deletion or commit.
+
+Point the default development/start/check/build commands and CI at the replacement.
+Search for remaining imports and runtime references, install from the resulting
+lockfile, run all replacement checks, and verify a fresh launch plus backup
+restore. Update README, CONTRIBUTING, SECURITY, and the current-step marker to
+reflect the actual cutover.
+
+Exit: only the new implementation is maintained and executed. There is no
+parallel legacy mode or adapter keeping old application logic alive.
+
+## Work after the base
+
+Choose complete slices through the financial concepts when they become useful:
+claims and settlements, commitments and fulfilment, intentions and progress,
+quantity holdings and valuations, or another demonstrated need. Each slice adds
+records, operations, calculations, human use, agent use, and recovery together.
+Do not make CSV import, bank sync, or monthly reconciliation a prerequisite for
+ordinary recording. New external actions require their own authority and risk
+contract and remain outside this initial plan.
 
 ## Immediate next task
 
-Do not begin Phase 20 implementation yet. If external model access is available,
-run the Phase 19 pilot manually against a small, explicitly selected set of
-local and/or hosted models using only `sample-kernel-v1`, preserve the full
-three-trial sample for each supported task/mode, sanitize it with
-`evals/results/live-model-pilot-template.md`, and review where failures cluster.
-Then write a proposed Phase 20 with one evidence-backed product question and
-its exit gate. If no live access is available, the next useful work is a
-time-boxed user workflow study of the existing governed personal-ledger UI.
-Persistence, ingestion, bank connectivity, a browser provider selector,
-credential storage, self-hosting, and autonomous confirmation remain
-unauthorized until that evidence justifies one narrow phase.
+Start R0: write the domain/storage/runtime contracts and create only the three
+new roots with independent build/check wiring. Then implement the persistent
+manual core in R1. Do not continue the old Phase 19 pilot or add a Phase 20 to
+its archived sequence as the replacement starting point.
