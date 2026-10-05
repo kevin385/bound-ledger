@@ -1,41 +1,53 @@
 # Contributing to Bound Ledger
 
-Bound Ledger is currently an early research project. Small, evidence-backed
-changes are preferred over framework expansion.
-
-The possible long-term direction is an open-source, self-hostable,
-model-agnostic personal-finance workspace, but future product intent does not
-authorize later-phase code. The current implementation boundary remains the
-one named in `docs/INITIAL_PLAN.md`.
+Bound Ledger is starting an independent replacement of its research prototype.
+Read [PLAN.md](PLAN.md) for the financial concepts and product purpose, then
+[docs/INITIAL_PLAN.md](docs/INITIAL_PLAN.md) for the current step and exit criteria.
+The active step is **R0: specify and bootstrap the replacement**. Archived research
+plans are historical; their phase gates do not apply to new work.
 
 ## Choosing work
 
-Read [docs/INITIAL_PLAN.md](docs/INITIAL_PLAN.md) before changing code. It is the
-authoritative implementation order and identifies the current phase. Work from
-later phases should not be scaffolded early, even when it appears in the target
-architecture in [PLAN.md](PLAN.md).
+Build useful slices of a financial system: record a fact, preserve its meaning,
+understand its effects, correct it, and let an agent operate the same behavior.
+Do not shape the model around a note layout, CSV import, reconciliation workflow,
+or tool/code benchmark. Ordinary recording should be simple and recoverable.
 
-Use the ownership and non-goals declared by the current phase. Do not add a
-package, agent, cloud resource, database, UI, or sandbox until the corresponding
-phase gate is complete.
+The planned new roots are `apps/finance`, `packages/finance-core`, and
+`packages/finance-agent`. They do not exist yet. Keep new source independent of
+`apps/cli`, `apps/personal-ledger`, and all five existing runtime packages.
+Do not import or copy their implementations into a new wrapper. Shared tooling
+and public third-party dependencies are allowed; implement relevant invariants
+and tests independently in the new domain.
 
-Phase 18 is complete. Phase 19 is currently planned. Contributions should
-begin with the application-owned model-configuration decoder, disclosure and
-secret-handling contract, and deterministic fake-provider tests before adding
-the opt-in six-task live evaluation runner. Keep both deterministic suites,
-ordinary CI, and the `/comparison` route provider-free. Do not add a provider
-package, browser model selector, stored credentials, persistence, CSV/bank
-ingestion, self-hosting infrastructure, or trusted confirmation execution as
-part of Phase 19.
+Existing source remains runnable only until R0–R4 pass the initial-base gate.
+Then remove it entirely through R5, including its tests, fixtures, commands,
+unused dependencies, and CI wiring. Compatibility with old APIs, schema, UI, or
+benchmark outputs is not a contribution requirement. Do not delete it before
+the base is demonstrated; do not keep a legacy mode after cutover.
 
-## Development
+## Contribution scope and practices
 
-Requirements:
+- Keep one application, one financial core, and one thin Pi adapter initially.
+  New packages need an actual boundary or a second consumer.
+- Keep domain calculations and validation independent of Pi and the UI.
+- Use the same public operations from human controls, tools, and code mode.
+- Derive authority in the host; do not accept it from model arguments.
+- Preserve uncertainty, ownership, currency, date precision, and source evidence.
+  Do not invent facts, and do not count linked effects twice.
+- Financial writes need atomic effects/revisions/receipts. Test the retry gap
+  between domain persistence and assistant result persistence.
+- Use upstream Pi durable/codemode instead of implementing another harness or
+  sandbox; verify their boundaries and pin the tested releases.
+- Keep tests beside behavior, with deterministic synthetic data and no required
+  provider calls. Test real invariants and completed user workflows.
+- Update the current-step marker and documentation when a slice is completed.
+  State what exists versus what is merely planned.
 
-- Node.js 24 or newer;
-- pnpm 11.18.0 or compatible.
+## Development during the transition
 
-Run:
+The current repository requires Node.js 24+ and pnpm 11.18.0 or compatible.
+Until R0 adds new commands, these operate the existing research implementation:
 
 ```sh
 pnpm install
@@ -43,46 +55,36 @@ pnpm check
 pnpm start
 ```
 
-Keep tests beside the behavior they verify and keep dependencies flowing from
-applications toward packages.
+The current CI also builds/tests the old browser application. When new roots
+are added, include independent build/typecheck/test/browser coverage and document
+its commands here and in the README. Keep old checks passing while code remains;
+do not make the replacement inherit old fixtures or frozen research evaluations.
+For documentation-only changes, check relative links, conflicting status text,
+commands against package scripts, and diff whitespace. Unchanged application
+behavior does not require rerunning every old evaluation.
 
-Before opening a pull request:
+Before committing code, run the checks required by the slice and the checks
+covering any shared configuration changed. Keep tests and builds network-free;
+a live provider test must be explicitly configured and opted into. No new
+command listed as planned should be represented as runnable before it exists.
 
-```sh
-pnpm check
-pnpm start
-```
+## Data, models, and security
 
-If a pull request completes a phase, update the **Current phase** marker in
-`docs/INITIAL_PLAN.md` in the same change.
+Never commit real finance notes, statements, account identifiers, credentials,
+provider responses containing user data, or local agent state. Use synthetic
+fixtures even when a user's example motivates a feature. Keep private runtime
+data outside source control and document backup/restore and migration behavior.
 
-If a change alters a public command, workspace, capability catalog, sandbox
-contract, security boundary, or phase exit condition, update the README and
-affected plan/threat-model/ADR documentation in the same pull request. Keep
-descriptions explicit about what is implemented versus only planned.
+Disclose provider and data scope before transmitting financial data. Model
+configuration and secrets belong to host configuration, not prompts or generated
+code. A record-save request does not authorize money movement; external actions
+are outside the initial base. See [SECURITY.md](SECURITY.md).
 
-## Financial and model data
+## Independent implementation and license
 
-- Use only deterministic, synthetic fixtures committed for that purpose.
-- Never commit real statements, account identifiers, access tokens, API keys,
-  prompts containing personal financial data, or model-provider responses that
-  contain user data.
-- Deterministic tests must remain runnable without a model or API key.
-- Live-model tests, when a later phase permits them, must be opt-in and excluded
-  from ordinary CI.
-- Do not add a provider or source connector before its trusted context,
-  disclosure, secret handling, failure behavior, and conformance tests are
-  documented.
+Public documentation can inform architecture and missed failure modes. Do not
+copy private/proprietary code, schemas, prompts, naming catalogs, or abstractions.
+The new implementation is owned by this project; third-party packages retain
+their licenses. Contributions are licensed under Apache-2.0.
 
-## Clean-room contributions
-
-Contributions must be independently implemented. Do not submit code, schemas,
-tests, prompts, private paths, naming catalogs, or product abstractions copied
-from another private or proprietary system.
-
-## Security
-
-Do not report vulnerabilities publicly. Follow [SECURITY.md](SECURITY.md).
-
-By contributing, you agree that your contribution is licensed under the
-Apache License 2.0.
+Report vulnerabilities privately through the process in [SECURITY.md](SECURITY.md).
