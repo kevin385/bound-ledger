@@ -26,8 +26,9 @@ Phase 20 restrictions no longer apply. Preserve historical evidence in the
 
 The npm registry reported `1.0.2` for both pi-codemode and pi-durable.
 Tag `v1.0.2` resolves to `cd32f7725fdbddbaecdff5b1e68491563394e0ca`, released
-4 October 2026. The current research workspace still pins pi-agent-core and
-pi-ai to `0.84.1`; it was not upgraded by this assessment.
+4 October 2026. At assessment time, the research workspace pinned pi-agent-core
+and pi-ai to `0.84.1`; the assessment itself did not upgrade them. Current
+dependency versions are declared in `pnpm-workspace.yaml`.
 Sources: [codemode changelog](https://github.com/earendil-works/pi/blob/v1.0.2/packages/codemode/CHANGELOG.md),
 [durable changelog](https://github.com/earendil-works/pi/blob/v1.0.2/packages/durable/CHANGELOG.md).
 
