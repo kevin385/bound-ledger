@@ -2,83 +2,72 @@
 
 ## Project status
 
-Bound Ledger is pre-alpha research software. It is not a production security
-boundary and must not be used with real financial data, production credentials,
-or untrusted generated code.
+Bound Ledger is pre-alpha. The existing fixture-backed research implementation
+remains temporarily while an independent replacement is built. No replacement
+application or production security boundary is implemented by the planning docs.
+Use synthetic data and test credentials until the relevant implemented controls
+and their verification permit broader use.
 
-The documented long-term direction includes possible self-hosting, user-chosen
-models, persistence, and financial source import. None of those statements
-changes the current warning or makes the existing QuickJS/child-process proof
-suitable for hostile workloads.
-
-Only the current `main` branch receives security fixes.
+Only the current `main` branch receives security fixes. The active product and
+implementation scope are in [PLAN.md](PLAN.md) and
+[docs/INITIAL_PLAN.md](docs/INITIAL_PLAN.md). Passing the initial-base replacement
+gate permits removal of old code; it is not a production security certification.
 
 ## Report a vulnerability privately
 
-Use GitHub's private vulnerability reporting flow:
+Use GitHub's private vulnerability reporting flow: open the repository's
+**Security** tab, then **Advisories**, then **Report a vulnerability**.
+Do not publish exploit details in an issue, discussion, PR, or commit. If private
+reporting is unavailable, open a neutral issue asking for a private contact path.
 
-1. Open the repository's **Security** tab.
-2. Open **Advisories**.
-3. Select **Report a vulnerability**.
+Include the affected revision, impact, and a minimal reproduction with synthetic
+data and no secrets. Reports are handled on a best-effort basis during pre-alpha.
 
-Do not disclose vulnerability details in a public issue, discussion, pull
-request, or commit message. If private reporting is unexpectedly unavailable,
-open a neutral issue asking the maintainer to enable a private contact path; do
-not include exploit details.
+Relevant reports include authorization bypass, financial-state corruption or
+repeated effects, sandbox/host-access failures, credential or financial-data
+exposure, unsafe backup/restore/migrations, and dependency or CI weaknesses.
 
-Useful reports include the affected revision, impact, reproduction steps, and a
-minimal proof of concept that contains no real secrets or personal data.
+## Existing research boundaries
 
-## Scope
+The old application uses in-memory fixtures and trusted local-session state.
+Its capability gateway validates/authorizes operations, and its confirmation
+controls remain outside model tools. Its custom QuickJS-WASM executor uses a
+bounded disposable child process. Those are prototype-specific properties,
+not promises about the replacement or production isolation.
 
-Relevant reports include:
+[The old threat model](docs/CODE_MODE_THREAT_MODEL.md) and
+[ADR 0001](docs/adr/0001-experimental-code-sandbox.md) remain applicable to that
+source while it exists. They do not select or approve Pi's different worker
+boundary. The isolated [Pi spike](experiments/pi-refresh/README.md) demonstrates
+limited behavior and does not establish escape resistance or general replay safety.
 
-- authorization or trusted-context bypasses;
-- unintended filesystem, process, environment, or network access;
-- sandbox escapes or resource-limit bypasses once code mode exists;
-- credential disclosure through logs, traces, fixtures, or workflows;
-- dependency or CI workflow supply-chain weaknesses.
+## Requirements for the replacement
 
-Reports are handled on a best-effort basis while the project is pre-alpha.
+The implementation must make these boundaries concrete before claiming them:
 
-## Current trust boundaries
+- One local owner, loopback access, host-derived workspace authority, and protected
+  local state-changing endpoints. Remote/multi-user exposure needs a separate
+  identity and authorization design.
+- Validated financial inputs/outputs, checked numeric precision, coherent effects,
+  revisions, and transactions that atomically persist effects and request receipts.
+  Recovery across the domain/Pi commit gap must not repeat a committed write.
+- Local domain data independent of assistant transcripts; reset, compaction, fork,
+  cancellation, or provider failure cannot erase or rewrite financial facts.
+- Private data paths and access permissions, consistent backup/export/restore,
+  migration failure behavior, and documented retention/deletion. Describe whether
+  encryption is present; do not imply local storage is encrypted by default.
+- Explicit provider/data-scope disclosure and opt-in model configuration. Secrets
+  stay in host configuration and out of prompts, generated code, traces, fixtures,
+  and source control. Treat supplied text and model output as untrusted data.
+- Every nested code-mode operation crosses application validation and authority.
+  The guest receives bounded operations, not raw SQL, database handles, credentials,
+  or ambient filesystem/network access. Pin the runtime and verify host isolation,
+  time/memory/output/call limits, cancellation, and packaged worker/WASM loading.
+- Replay-safe declarations backed by operation and whole-script evidence. Task
+  recovery is not an exactly-once guarantee, and script failure is not rollback.
 
-- Fixture and trusted-session state live in the host application, not in model
-  input or generated code.
-- Every ledger operation must cross the capability gateway for decoding,
-  authorization, execution, output decoding, and attempt recording.
-- Confirmation approval and rejection are trusted application controls, not
-  model tools or guest SDK operations.
-- Generated JavaScript runs in a fresh QuickJS-WASM runtime inside a disposable
-  child process with explicit limits, but this is experimental defense in depth
-  rather than a production isolation guarantee.
-- The browser application is local, in memory, single-session, and restricted
-  to checked-in synthetic fixtures.
-
-See [`docs/CODE_MODE_THREAT_MODEL.md`](docs/CODE_MODE_THREAT_MODEL.md) and
-[`docs/adr/0001-experimental-code-sandbox.md`](docs/adr/0001-experimental-code-sandbox.md)
-for the code-execution attacker model, evidence, residual risks, and stop
-conditions.
-
-## Required future reviews
-
-Before any later phase permits real financial data, persistence, user-selected
-models, source imports, or external connectors, its plan and threat model must
-cover at least:
-
-- encryption, secret storage, key rotation, backup, restore, export, deletion,
-  and migration failure;
-- authentication, session isolation, multiple-ledger access, CSRF, SSRF, and
-  same-origin server-function behavior;
-- what data is sent to each local or remote model, explicit user disclosure,
-  redaction/minimization, provider retention, and prompt-injection handling;
-- malicious CSV/OFX/QFX fields, document formulas, oversized inputs, duplicate
-  imports, source provenance, and parser resource limits;
-- connector token scope, webhook authenticity, replay, revocation, sync
-  idempotency, and the rule that ingestion cannot post ledger facts directly;
-- operating-system/container resource limits for generated code and a new
-  production sandbox decision rather than relying only on this local proof;
-- dependency, image, release, update, and self-hosted supply-chain behavior.
-
-Payment initiation, automated trading, and model-callable confirmation are not
-covered future capabilities and remain out of scope.
+Write the replacement threat model and runtime decision against its actual
+implementation, and keep ordinary CI provider-free. The initial scope records
+and explains finances; it does not execute payments, trading, or other external
+money movement. Later integrations need their own authorization, disclosure,
+credential, replay, and completion-verification contracts.

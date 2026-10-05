@@ -1,5 +1,9 @@
 # ADR 0001: Experimental code sandbox boundary
 
+> Legacy decision: accepted for the research subprocess proof only. It does
+> not select or approve Pi codemode for the replacement. See
+> [the active implementation plan](../INITIAL_PLAN.md).
+
 - **Status:** Accepted for a local proof only
 - **Date:** 2026-08-13
 
