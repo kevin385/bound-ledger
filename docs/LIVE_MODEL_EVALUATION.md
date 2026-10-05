@@ -1,5 +1,9 @@
 # Live-model evaluation pilot
 
+> Legacy scope: this guide operates the existing research pilot. Running it is
+> optional and is not a prerequisite for the independent replacement described
+> in [the active implementation plan](INITIAL_PLAN.md).
+
 ## Purpose and boundary
 
 Phase 19 adds a deliberately small way to measure whether a selected model can
