@@ -28,7 +28,7 @@ catalog:
   typescript: "7.0.2"
   vite: "8.2.2"
   "@vitejs/plugin-react": "6.1.0"
-  vitest: "4.1.10"
+  vitest: "4.1.11"
 
 allowBuilds:
   "@astryxdesign/cli": false
