@@ -1,5 +1,9 @@
 # Code-mode threat model
 
+> Legacy scope: this document describes the existing research executor only.
+> It does not approve the replacement runtime. Follow [PLAN.md](../PLAN.md) and
+> [the active implementation plan](INITIAL_PLAN.md) for new work.
+
 ## Status and scope
 
 This threat model covers execution of model-generated JavaScript inside Bound
