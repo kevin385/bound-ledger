@@ -32,7 +32,11 @@
     "test": "pnpm -r --if-present test && pnpm test:sandbox",
     "test:sandbox": "node --no-node-snapshot --test experiments/sandbox/*.test.ts",
     "typecheck": "pnpm -r --if-present typecheck",
-    "check": "pnpm typecheck && pnpm test"
+    "check": "pnpm typecheck && pnpm test",
+    "dev:finance": "pnpm --filter @bound/finance dev",
+    "build:finance": "pnpm --filter @bound/finance-core build && pnpm --filter @bound/finance-agent build && pnpm --filter @bound/finance build",
+    "check:finance": "pnpm --filter @bound/finance-core check && pnpm --filter @bound/finance-agent check && pnpm --filter @bound/finance check",
+    "test:e2e:finance": "pnpm --filter @bound/finance test:e2e"
   },
   "devDependencies": {
     "isolated-vm": "7.0.1",

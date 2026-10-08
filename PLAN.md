@@ -13,8 +13,9 @@ defines the active sequence and initial-base replacement gate.
 documents together when direction changes. Archived research plans do not
 authorize or block replacement work.
 
-The initial base is not implemented. Existing source stays runnable during its
-construction and is removed after the replacement gate passes. This is a clean
+R0 and the first persistent manual expense slice are implemented; see
+[docs/FINANCE_SLICE.md](docs/FINANCE_SLICE.md). The full initial base is not complete.
+Existing source stays runnable until the replacement gate passes. This is a clean
 implementation with no compatibility obligation to the prototype's APIs,
 schemas, catalogs, framework abstractions, or evaluations.
 

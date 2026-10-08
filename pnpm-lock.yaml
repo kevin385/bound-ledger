@@ -127,6 +127,22 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
+  apps/finance:
+    dependencies:
+      '@bound/finance-core':
+        specifier: workspace:*
+        version: link:../../packages/finance-core
+    devDependencies:
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.62.1
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.2.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
   apps/personal-ledger:
     dependencies:
       '@astryxdesign/core':
@@ -267,6 +283,28 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.111
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.2.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
+  packages/finance-agent:
+    dependencies:
+      '@bound/finance-core':
+        specifier: workspace:*
+        version: link:../finance-core
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.2.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
+  packages/finance-core:
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

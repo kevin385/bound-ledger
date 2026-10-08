@@ -3,8 +3,10 @@
 ## Project status
 
 Bound Ledger is pre-alpha. The existing fixture-backed research implementation
-remains temporarily while an independent replacement is built. No replacement
-application or production security boundary is implemented by the planning docs.
+remains temporarily alongside R0 and the first persistent manual expense slice.
+[The implemented boundary and residual risks](docs/FINANCE_SLICE.md) include
+loopback host/origin/session/CSRF protection and private SQLite files; they are
+not production security certification. Broader R1/R2 and R3/R4 are not complete.
 Use synthetic data and test credentials until the relevant implemented controls
 and their verification permit broader use.
 

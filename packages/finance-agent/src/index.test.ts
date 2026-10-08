@@ -1,0 +1,26 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { Ledger } from '@bound/finance-core';
+import * as adapter from './index.ts';
+test('the model-free facade uses host-owned authority and the same validated public operations', t => {
+  const dir = mkdtempSync(join(tmpdir(), 'bound-agent-test-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const ledger = new Ledger(join(dir, 'domain.sqlite'), { workspace: 'local', owner: 'local-owner' });
+  t.after(() => ledger.close());
+  assert.equal(typeof adapter.createOperationFacade, 'function', 'operation facade is missing');
+  const facade = adapter.createOperationFacade(ledger);
+  const receipt = facade.recordExpense('one', { description: 'Synthetic lunch', amount: '3.50', currency: 'USD' });
+  assert.equal(receipt.event.owner, 'local-owner');
+  assert.equal(facade.getExpense(receipt.event.id)?.minorUnits, 350);
+  assert.equal(facade.summary().positionBalance, null);
+  assert.throws(() => facade.recordExpense('two', { owner: 'attacker', amount: '3.50', currency: 'USD' }), /input/i);
+  const corrected = facade.correctExpense('edit', { id: receipt.event.id, expectedRevision: 1, expense: { description: 'Synthetic snack', amount: '2.00', currency: 'USD' } });
+  assert.equal(facade.undo('undo', { receiptId: corrected.id, expectedRevision: 2 }).event.minorUnits, 350);
+  assert.deepEqual(facade.getReceipt(receipt.id), receipt);
+  assert.equal(facade.listExpenses().length, 1);
+  assert.equal(facade.revisions(receipt.event.id).length, 3);
+  assert.equal('db' in facade, false);
+});
