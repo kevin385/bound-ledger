@@ -1,0 +1,32 @@
+{
+  "name": "@bound/finance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.11.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm --filter @bound/finance-core build && tsc",
+    "typecheck": "pnpm --filter @bound/finance-core build && tsc && tsc -p tsconfig.e2e.json",
+    "test": "pnpm --filter @bound/finance-core build && node --test src/*.test.ts",
+    "check": "pnpm build && pnpm typecheck && pnpm test",
+    "start": "node dist/main.js",
+    "dev": "pnpm build && node dist/main.js",
+    "test:e2e": "pnpm build && playwright test"
+  },
+  "dependencies": {
+    "@bound/finance-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "@playwright/test": "catalog:"
+  }
+}

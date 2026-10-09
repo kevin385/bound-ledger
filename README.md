@@ -12,7 +12,9 @@ one input format defines the product.
 ## Current status: independent rewrite
 
 The existing code is a completed, fixture-backed research prototype. It is being
-replaced, and the new application has not been implemented yet.
+replaced. R0 and a first persistent, model-free expense slice are implemented
+in three independent roots; the full R0–R4 replacement gate is **not passed**.
+See [the slice contract and decisions](docs/FINANCE_SLICE.md).
 
 Build the replacement independently alongside the prototype. Once the initial
 base passes the replacement gate in [docs/INITIAL_PLAN.md](docs/INITIAL_PLAN.md),
@@ -61,6 +63,28 @@ The isolated [Pi 1.0.2 spike](experiments/pi-refresh/README.md) verifies basic
 composition and one committed-phase recovery path. It is evidence, not the new
 application or a production-security guarantee.
 
+## Running the first persistent expense slice
+
+Node 24.11.1 (also tested on 26.10.0), pnpm 11.18.0:
+
+```sh
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm build:finance
+pnpm check:finance
+pnpm --filter @bound/finance exec playwright install chromium
+pnpm test:e2e:finance
+pnpm dev:finance
+```
+
+Open the printed numeric loopback address. Record an expense, inspect its receipt,
+reopen the app, view history/spending, Edit and Undo. An omitted account remains
+unspecified; balances are unknown and currencies are never combined. Data lives
+in private, Git-ignored `apps/finance/.local/ledger.sqlite`. Use synthetic data only.
+No model or key is required. The agent root is a typed operation facade, **not**
+a Pi/provider runtime. Income, transfers, positions, unresolved drafts,
+backup/export/restore commands, Pi and broader recovery are deferred. The
+[lifecycle design and security limits](docs/FINANCE_SLICE.md) are explicit.
+
 ## Running the existing prototype
 
 These commands currently operate the **old research implementation**:
@@ -74,14 +98,15 @@ pnpm check
 
 Requirements are Node.js 24+ and pnpm 11.18.0 or compatible. `pnpm start` runs a
 deterministic tool/code comparison. The browser application uses in-memory
-synthetic fixtures. Current package versions, CI, and root scripts still target
-that implementation; this documentation change does not upgrade dependencies
-or create replacement workspaces. The replacement plan labels future paths and
-commands explicitly.
+synthetic fixtures. Its dependencies, CI job and runtime wiring are retained;
+independent finance checks are added alongside them without upgrading the old
+runtime. The repository-wide check includes both old and new roots. The known
+legacy code-mode memory-limit timing assertion is separate from the new gates.
 
 See the [archived README](docs/archive/RESEARCH_README.md) for the complete
 prototype command reference. Use synthetic data while the project remains
-pre-alpha. No replacement security boundary or real-data readiness is claimed.
+pre-alpha. The first slice has a documented local boundary, not real-data readiness
+or completed Pi/isolation/backup guarantees.
 
 ## License
 

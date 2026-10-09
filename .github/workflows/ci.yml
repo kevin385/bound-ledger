@@ -49,3 +49,36 @@ jobs:
 
       - name: Check personal-ledger browser flow
         run: pnpm test:e2e
+
+  finance:
+    name: finance (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [24.11.1, 26.10.0]
+    env:
+      CI: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Enable pnpm through Corepack
+        run: corepack enable
+      - name: Install locked dependencies without legacy native builds
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build independent finance roots
+        run: pnpm build:finance
+      - name: Check finance types and actual SQLite / HTTP behavior
+        run: pnpm check:finance
+      - name: Install Playwright Chromium
+        run: pnpm --filter @bound/finance exec playwright install --with-deps chromium
+      - name: Exercise the model-free persistent browser workflow
+        run: pnpm test:e2e:finance

@@ -2,8 +2,13 @@
 
 ## Active direction
 
-**Current step: R0 — specify and bootstrap the independent replacement.**
-Status: planned; replacement source and commands do not exist yet.
+**Current step: R0 bootstrapped; first persistent expense slice through R1/R2.**
+Status: the three independent roots build/check, and manual expense capture,
+persisted receipts/history/spending, correction and undo work without a model.
+See [FINANCE_SLICE.md](FINANCE_SLICE.md) for contracts, runtime decisions, runnable
+commands, security boundaries and the deferred lifecycle design. Broader R1/R2,
+backup/export/restore, Pi/provider integration and R3/R4 remain unimplemented.
+The initial-base replacement gate is not passed; no legacy source is removed.
 
 This is the authoritative implementation sequence for the new direction in
 [PLAN.md](../PLAN.md). It supersedes the old nineteen-phase research sequence.
@@ -15,9 +20,9 @@ implementation entirely when the initial-base gate below passes. Do not port the
 old abstractions, maintain API compatibility, or import its runtime packages.
 No old source is removed by this documentation change.
 
-## Planned source ownership
+## Replacement source ownership
 
-The following paths are **planned**, not existing workspaces:
+The following paths are implemented bootstrap workspaces:
 
 ```text
 apps/finance                  local application and composition root
@@ -240,7 +245,8 @@ contract and remain outside this initial plan.
 
 ## Immediate next task
 
-Start R0: write the domain/storage/runtime contracts and create only the three
-new roots with independent build/check wiring. Then implement the persistent
-manual core in R1. Do not continue the old Phase 19 pilot or add a Phase 20 to
-its archived sequence as the replacement starting point.
+Independently verify/review the first expense slice, then finish broader R1/R2
+including the designed backup/export/restore lifecycle before claiming those
+steps complete. Pi/provider integration and R3/R4 recovery/isolation remain
+separate work. Do not remove the prototype or continue its old Phase 19 pilot
+as a substitute for the initial-base replacement gate.

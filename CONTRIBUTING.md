@@ -3,8 +3,10 @@
 Bound Ledger is starting an independent replacement of its research prototype.
 Read [PLAN.md](PLAN.md) for the financial concepts and product purpose, then
 [docs/INITIAL_PLAN.md](docs/INITIAL_PLAN.md) for the current step and exit criteria.
-The active step is **R0: specify and bootstrap the replacement**. Archived research
-plans are historical; their phase gates do not apply to new work.
+R0 is bootstrapped and a first persistent expense slice through R1/R2 works;
+[docs/FINANCE_SLICE.md](docs/FINANCE_SLICE.md) records its contracts and limits.
+Broader R1/R2 and R3/R4 are not complete. Archived research plans are historical;
+their phase gates do not apply to new work.
 
 ## Choosing work
 
@@ -13,8 +15,8 @@ understand its effects, correct it, and let an agent operate the same behavior.
 Do not shape the model around a note layout, CSV import, reconciliation workflow,
 or tool/code benchmark. Ordinary recording should be simple and recoverable.
 
-The planned new roots are `apps/finance`, `packages/finance-core`, and
-`packages/finance-agent`. They do not exist yet. Keep new source independent of
+The new roots are `apps/finance`, `packages/finance-core`, and
+`packages/finance-agent` (bootstrap facade only, no Pi runtime). Keep source independent of
 `apps/cli`, `apps/personal-ledger`, and all five existing runtime packages.
 Do not import or copy their implementations into a new wrapper. Shared tooling
 and public third-party dependencies are allowed; implement relevant invariants
@@ -47,7 +49,8 @@ the base is demonstrated; do not keep a legacy mode after cutover.
 ## Development during the transition
 
 The current repository requires Node.js 24+ and pnpm 11.18.0 or compatible.
-Until R0 adds new commands, these operate the existing research implementation:
+These retained commands operate the existing research implementation (the
+repository-wide check also includes the new roots):
 
 ```sh
 pnpm install
@@ -55,9 +58,22 @@ pnpm check
 pnpm start
 ```
 
-The current CI also builds/tests the old browser application. When new roots
-are added, include independent build/typecheck/test/browser coverage and document
-its commands here and in the README. Keep old checks passing while code remains;
+The new manual slice has independent commands and a separate CI job:
+
+```sh
+pnpm build:finance
+pnpm check:finance
+pnpm --filter @bound/finance exec playwright install chromium
+pnpm test:e2e:finance
+pnpm dev:finance
+```
+
+The tested runtime baseline is Node 24.11.1; CI also covers 26.10.0. New package
+scripts build their public core dependency before checking/running consumers.
+Checks use synthetic temporary databases and no provider, key or live model.
+The current CI still builds/tests the old browser application. Keep its wiring
+and assertions intact; separate any already-known failures from regressions.
+Keep old checks passing while code remains;
 do not make the replacement inherit old fixtures or frozen research evaluations.
 For documentation-only changes, check relative links, conflicting status text,
 commands against package scripts, and diff whitespace. Unchanged application

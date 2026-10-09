@@ -1,0 +1,28 @@
+{
+  "name": "@bound/finance-agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.11.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm --filter @bound/finance-core build && tsc",
+    "typecheck": "pnpm --filter @bound/finance-core build && tsc --noEmit",
+    "test": "pnpm --filter @bound/finance-core build && node --test src/*.test.ts",
+    "check": "pnpm build && pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@bound/finance-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}
