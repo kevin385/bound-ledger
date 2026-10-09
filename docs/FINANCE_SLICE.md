@@ -26,6 +26,7 @@ Synthetic-only pre-alpha; this slice is not real-data readiness certification.
 | New build tooling | Catalog TypeScript **7.0.2**, `@types/node` **26.2.0** |
 | Browser proof | Catalog `@playwright/test` **1.62.1**, Chromium |
 | Agent / model adapter | No Pi or provider runtime dependency installed in the new roots; disabled, no provider calls or secret/config loading |
+| Transitive dependency | `js-yaml` overridden to **4.3.2** in `pnpm-workspace.yaml` (fixes GHSA-2883-xcg3-v3hh for `xmlbuilder2`) |
 
 The baseline `node:sqlite` API is experimental and emits its upstream warning.
 A Node upgrade can change SQLite behavior; run these exact-version gates before
@@ -66,6 +67,9 @@ Use only synthetic data. Do not expose the port through a reverse proxy/tunnel.
 Each new package has `build`, `typecheck`, `test`, and `check` commands.
 Consumer scripts build their public core dependency first, including from a
 fresh checkout; they do not import legacy source or internal package paths.
+The app `typecheck` also compiles the app before checking the browser tests, so
+it resolves the emitted `dist` from a clean checkout rather than requiring a
+prior separate build.
 `check:finance` covers all three roots, plus strict browser-test typechecking;
 `test:e2e:finance` runs actual Chromium against separate application processes.
 The original `start`, development, build, check and browser commands remain.
@@ -273,6 +277,8 @@ private-file checks, body/type/duplicate/header limits and persisted manual view
 Lifecycle regressions count Linux `/proc/self/fd` SQLite handles after repeated
 failed binds, hold a real incomplete POST through concurrent shutdown callers,
 and fault the drained server's close callback to verify SQLite error cleanup.
+The `/proc`-based descriptor probes skip on non-Linux hosts where that interface
+is unavailable; the Linux CI job still runs them.
 Recovery regressions cover non-mutating credential refusal, preserved original
 revisions despite competing edits, unknown/malformed targets, operation-specific
 unknown fields, changed-payload key conflicts and real post-commit response faults

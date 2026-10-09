@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "pnpm --filter @bound/finance-core build && tsc",
-    "typecheck": "pnpm --filter @bound/finance-core build && tsc --noEmit && tsc -p tsconfig.e2e.json",
+    "typecheck": "pnpm --filter @bound/finance-core build && tsc && tsc -p tsconfig.e2e.json",
     "test": "pnpm --filter @bound/finance-core build && node --test src/*.test.ts",
     "check": "pnpm build && pnpm typecheck && pnpm test",
     "start": "node dist/main.js",

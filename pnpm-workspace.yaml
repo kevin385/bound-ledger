@@ -38,3 +38,6 @@ allowBuilds:
   isolated-vm: true
   msgpackr-extract: false
   protobufjs: false
+
+overrides:
+  js-yaml: 4.3.2

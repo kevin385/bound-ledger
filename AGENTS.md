@@ -4,8 +4,11 @@ Read `PLAN.md`, `docs/INITIAL_PLAN.md`, and `CONTRIBUTING.md` before changing co
 They define the active independent rewrite. `docs/archive/` is historical and
 its phase gates do not govern replacement work.
 
-- Current step: R0, specify/bootstrap `apps/finance`, `packages/finance-core`,
-  and `packages/finance-agent`. These are planned roots, not implemented workspaces.
+- Current step: R0 is bootstrapped and a first persistent, model-free expense
+  slice through R1/R2 exists in `apps/finance`, `packages/finance-core`, and
+  `packages/finance-agent` (typed operation facade only, no Pi/provider runtime).
+  The initial-base replacement gate has not passed; broader R1/R2 and R3/R4 remain.
+  See `docs/FINANCE_SLICE.md` for implemented contracts, commands, and limits.
 - New source must not import or wrap the old apps/packages. Shared repository
   tooling and third-party libraries may be used; financial behavior is independently
   implemented. Keep the core independent of Pi and the UI.

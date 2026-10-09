@@ -9,6 +9,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startFinance } from './index.ts';
 
+// SQLite descriptor accounting reads Linux /proc; these probes are Linux-only.
+const linuxOnly = { skip: process.platform !== 'linux' };
+
 function databaseHandles(directory: string): number {
   return readdirSync('/proc/self/fd').filter(fd => {
     try { return readlinkSync('/proc/self/fd/' + fd) === join(directory, 'ledger.sqlite'); }
@@ -16,7 +19,7 @@ function databaseHandles(directory: string): number {
   }).length;
 }
 
-test('repeated failed binds close every SQLite handle and preserve EADDRINUSE', async t => {
+test('repeated failed binds close every SQLite handle and preserve EADDRINUSE', linuxOnly, async t => {
   const directory = mkdtempSync(join(tmpdir(), 'bound-bind-'));
   const held = createServer();
   await new Promise<void>(resolve => held.listen(0, '127.0.0.1', resolve));
@@ -33,7 +36,7 @@ test('repeated failed binds close every SQLite handle and preserve EADDRINUSE', 
   assert.equal(databaseHandles(directory), before, 'failed startup retained SQLite descriptors');
 });
 
-test('concurrent close callers wait for the in-flight form commit and SQLite disposal', async t => {
+test('concurrent close callers wait for the in-flight form commit and SQLite disposal', linuxOnly, async t => {
   const directory = mkdtempSync(join(tmpdir(), 'bound-close-'));
   const app = await startFinance({ port: 0, stateDirectory: directory });
   t.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -74,7 +77,7 @@ test('concurrent close callers wait for the in-flight form commit and SQLite dis
   } finally { await reopened.close(); }
 });
 
-test('shutdown errors still dispose SQLite and all callers receive the same failure', async t => {
+test('shutdown errors still dispose SQLite and all callers receive the same failure', linuxOnly, async t => {
   const directory = mkdtempSync(join(tmpdir(), 'bound-close-error-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const app = await startFinance({ port: 0, stateDirectory: directory });
